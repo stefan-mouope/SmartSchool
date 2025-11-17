@@ -1,4 +1,3 @@
-# auth_app/consumers/rabbitmq_consumer.py
 import pika
 import json
 import threading
@@ -7,7 +6,7 @@ from rest_framework_simplejwt.tokens import AccessToken
 class RabbitMQConsumer(threading.Thread):
     def __init__(self):
         super().__init__(daemon=True)
-        self.queue_name = 'auth_verify_queue'
+        self.queue_name = "auth_verify_queue"
 
     def run(self):
         connection = pika.BlockingConnection(
@@ -18,8 +17,27 @@ class RabbitMQConsumer(threading.Thread):
             )
         )
         channel = connection.channel()
+
+        # 🔥 Node publie sur inscription_events → donc on déclare l'exchange
+        channel.exchange_declare(
+            exchange="inscription_events",
+            exchange_type="topic",
+            durable=False
+        )
+
+        # 🔥 Declare queue
         channel.queue_declare(queue=self.queue_name, durable=True)
 
+        # 🔥 Bind queue → exchange
+        channel.queue_bind(
+            exchange="inscription_events",
+            queue=self.queue_name,
+            routing_key="auth.verify"  # même routingKey que Node.js
+        )
+
+        print("📌 Queue liée à l'exchange inscription_events (routingKey=auth.verify)")
+
+        # --- CALLBACK RPC ---
         def callback(ch, method, properties, body):
             data = json.loads(body)
             token = data.get('token')
@@ -29,12 +47,12 @@ class RabbitMQConsumer(threading.Thread):
 
             try:
                 decoded = AccessToken(token)
-                role = decoded.get('role', '')
-                user_id = decoded.get('user_id', '')
-                username = decoded.get('username', '')
-                print("TOKEN DECODE:", decoded)
+                role = decoded.get("role", "")
+                username = decoded.get("username", "")
+                user_id = decoded.get("user_id", "")
 
-                # ACTIONS AUTORISÉES PAR RÔLE
+                print("🎫 TOKEN DECODE:", decoded)
+
                 allowed = {
                     'directeur': ['create_eleve', 'create_inscription', 'delete_eleve'],
                     'caissier': ['view_paiements'],
@@ -44,25 +62,29 @@ class RabbitMQConsumer(threading.Thread):
                 if action not in allowed.get(role, []):
                     response = {
                         'valid': False,
-                        'error': f'Action "{action}" non autorisée pour le rôle "{role}"'
+                        'error': "f'Action '{action}' non autorisée pour '{role}'"
                     }
                 else:
                     response = {
                         'valid': True,
-                        'user_id': str(user_id),
-                        'role': role,
-                        'username': username
+                        'user_id': user_id,
+                        'username': username,
+                        'role': role
                     }
 
             except Exception as e:
-                response = {'valid': False, 'error': str(e)}
+                response = {"valid": False, "error": str(e)}
 
+            # 🔥 Réponse RPC obligatoire !!!
             ch.basic_publish(
-                exchange='',
+                exchange="",
                 routing_key=properties.reply_to,
-                properties=pika.BasicProperties(correlation_id=properties.correlation_id),
+                properties=pika.BasicProperties(
+                    correlation_id=properties.correlation_id
+                ),
                 body=json.dumps(response)
             )
+
             ch.basic_ack(delivery_tag=method.delivery_tag)
 
         print("Django Consumer RabbitMQ démarré...")

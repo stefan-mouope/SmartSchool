@@ -6,12 +6,11 @@ import {
   deleteStudent,
 } from "../controllers/eleveController.js";
 
-import { requireAuth } from "../middleware/auth.js";
-
-
 const router = express.Router();
 
-router.post("/", requireAuth("create_eleve"), createStudent);
+// ➕ Créer un étudiant
+router.post("/", createStudent);
+
 // 📄 Lister tous les étudiants
 router.get("/", getAllStudents);
 

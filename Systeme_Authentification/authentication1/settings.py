@@ -147,15 +147,24 @@ SIMPLE_JWT = {
 AUTH_USER_MODEL = 'app_auth.User'
 
 
-#configuration pour que ce service prenne sa configuration depuis config-service
 import requests
 import os
 
 CONFIG_SERVER_URL = "http://localhost:8080/auth-service/default"
 
 try:
-    config = requests.get(CONFIG_SERVER_URL).json()
-    props = config.get("propertySources", [])[0]["source"]
+    response = requests.get(CONFIG_SERVER_URL)
+    response.raise_for_status()  # si HTTP != 200 → exception
+
+    config = response.json()
+    property_sources = config.get("propertySources", [])
+
+    if not property_sources:
+        print("⚠️ Aucun propertySources trouvé dans Config Service.")
+        raise ValueError("propertySources vide")
+
+    # premier fichier de config
+    props = property_sources[0].get("source", {})
 
     DATABASE_URL = props.get("DATABASE_URL", "sqlite:///db.sqlite3")
     DEBUG = props.get("DEBUG", "True") == "True"
