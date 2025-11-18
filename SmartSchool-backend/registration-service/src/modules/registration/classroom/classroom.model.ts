@@ -4,7 +4,7 @@ import sequelize from "../../../config/database";
 export class ClassRoom extends Model {
   public id!: number;
   public name!: string;
-  public level!: number;
+  // public level!: number;
   public school_id!: number;
 }
 

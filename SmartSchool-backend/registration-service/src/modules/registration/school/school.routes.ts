@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { SchoolController } from "./school.controller";
-import { verifyAuth } from "../evnts/middlewares/verifyAuth";
+import { verifyAuth } from "../events/middlewares/verifyAuth";
 
 const router = Router();
 const schoolController = new SchoolController();

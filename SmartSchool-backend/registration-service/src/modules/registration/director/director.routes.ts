@@ -1,11 +1,12 @@
 import { Router } from "express";
 import { DirectorController } from "./director.controller";
+import { verifyAuth } from "../events/middlewares/verifyAuth";
 
 const router = Router();
 const directorController = new DirectorController();
 
 // Routes CRUD pour Director
-router.post("/", (req, res) => directorController.create(req, res));
+router.post("/", verifyAuth('create_director'),(req, res) => directorController.create(req, res));
 router.get("/", (req, res) => directorController.findAll(req, res));
 router.get("/school/:schoolId", (req, res) => directorController.findBySchool(req, res));
 router.get("/:id", (req, res) => directorController.findById(req, res));

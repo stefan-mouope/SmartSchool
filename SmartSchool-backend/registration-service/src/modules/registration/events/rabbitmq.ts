@@ -108,3 +108,41 @@ export const publishEvent = async <T = any>(
     }, 10000); // 10s
   });
 };
+
+
+// ✅ Publier un événement RPC
+export const publishDynamiqueEvent = async <T = any>(
+  exchange: string,
+  event: T,
+  routingKey: string 
+): Promise<any> => {
+  if (!channel) throw new Error("❌ Channel RabbitMQ non initialisé");
+  if (!replyQueue) throw new Error("❌ replyQueue non initialisée");
+
+  const correlationId = UUIDV4();
+
+  return new Promise<any>((resolve, reject) => {
+    pendingResponses.set(correlationId, { resolve, reject });
+
+    channel.publish(
+      exchange,
+      routingKey,
+      Buffer.from(JSON.stringify(event)),
+      {
+        replyTo: replyQueue.queue,
+        correlationId,
+        persistent: true,
+      }
+    );
+
+    console.log("📤 Événement publié :", event, "correlationId:", correlationId);
+
+    // ❌ Optionnel : timeout si pas de réponse
+    setTimeout(() => {
+      if (pendingResponses.has(correlationId)) {
+        pendingResponses.get(correlationId)?.reject(new Error("Timeout RabbitMQ"));
+        pendingResponses.delete(correlationId);
+      }
+    }, 10000); // 10s
+  });
+};
