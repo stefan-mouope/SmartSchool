@@ -54,6 +54,7 @@ class RabbitMQConsumer(threading.Thread):
                 print("🎫 TOKEN DECODE:", decoded)
 
                 allowed = {
+                    'superuser':['create_ecole'],
                     'directeur': ['create_eleve', 'create_inscription', 'delete_eleve'],
                     'caissier': ['view_paiements'],
                     'secretaire': ['view_eleves']
