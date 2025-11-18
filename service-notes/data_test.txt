@@ -1,0 +1,40 @@
+generer le bulletins par trimestre 
+
+POST  http://127.0.0.1:8000/api/bulletins/generer/
+
+
+{
+    "inscription_id": 1,
+    "classe_id": 1,
+    "trimestre": 3
+}
+
+on peut juste changer l'id du trimestre
+
+generer le bulletins par sequence
+
+{
+    "inscription_id": 1,
+    "classe_id": 1,
+    "sequence": 2
+}
+
+
+creer une note quelconque 
+POST http://127.0.0.1:8000/notes/create/1/36/
+
+
+Recuperer toutes les notes d'une inscription 
+
+GET http://127.0.0.1:8000/notes/inscription/1/
+
+
+Récupérer toutes les notes d’une matière
+
+GET http://127.0.0.1:8000/notes/matiere/101/
+
+
+Recuperer LES MOYENNES PAR inscription 
+
+GET http://127.0.0.1:8000/notes/moyennes/1/
+

@@ -1,0 +1,87 @@
+# --------- PYTHON ----------
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environnements virtuels
+env/
+venv/
+.venv/
+log/
+log/*
+
+# Fichiers de build
+build/
+dist/
+*.egg-info/
+*.egg
+
+# --------- DJANGO ----------
+# Base de données SQLite (si jamais)
+db.sqlite3
+db.sqlite3-journal
+
+# Fichiers générés par Django
+*.log
+*.pot
+*.pyc
+*.mo
+
+# Migrations compilées
+*/migrations/__pycache__/
+*/migrations/*.pyc
+
+# Ne PAS ignorer les migrations !
+# (tu veux que le repo garde les migrations)
+# Donc on ignore seulement :
+*/migrations/*.pyc
+*/migrations/__pycache__/
+
+# --------- ENV / CONFIG ----------
+# Variables d’environnement
+.env
+.env.local
+.env.dev
+.env.prod
+*.env
+
+# Fichiers secrets
+secret.key
+*.pem
+
+# --------- REPORTLAB ----------
+# PDF générés automatiquement
+*.pdf
+
+# --------- EDITORS ----------
+# VS Code
+.vscode/
+.history/
+*.code-workspace
+
+# PyCharm
+.idea/
+
+# --------- CACHE / TEMP ----------
+*.DS_Store
+*.tmp
+*.swp
+*.swo
+*.bak
+Thumbs.db
+
+# --------- FRONTEND (si React dans le repo) ----------
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build React
+build/
+dist/
+.cache/
+
+# --------- DOCKER ----------
+docker-data/
+docker-compose.override.yml
