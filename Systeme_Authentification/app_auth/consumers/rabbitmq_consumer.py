@@ -7,6 +7,7 @@ class RabbitMQConsumer(threading.Thread):
     def __init__(self):
         super().__init__(daemon=True)
         self.queue_name = "auth_verify_queue"
+        
 
     def run(self):
         connection = pika.BlockingConnection(
