@@ -1,5 +1,10 @@
 import axios from "axios";
 
+
+export const BASE_REGISTRATION="REGISTRATION_SERVICE"
+
+
+
 // Base URL: set VITE_API_BASE_URL in .env, default to Django local
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
