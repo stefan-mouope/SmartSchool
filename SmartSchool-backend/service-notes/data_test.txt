@@ -20,21 +20,25 @@ generer le bulletins par sequence
 }
 
 
-creer une note quelconque 
-POST http://127.0.0.1:8000/notes/create/1/36/
+creer une note quelconque d'une inscription(un eleve) en une matière
+POST http://127.0.0.1:8000/notes/create/<int:id_inscription>/<int:id_matiere>/
 
 
-Recuperer toutes les notes d'une inscription 
+Modifier une note d'une inscription(un éleve) en une matière
+GET http://127.0.0.1:8000/notes/update/<int:id_inscription>/<int:id_matiere>/
 
-GET http://127.0.0.1:8000/notes/inscription/1/
+
+Recuperer la note d'une inscription(un éleve) à une matiere
+GET http://127.0.0.1:8000/notes/inscription/<int:id_inscription>/<int:id_matiere>/
 
 
 Récupérer toutes les notes d’une matière
+GET http://127.0.0.1:8000/notes/matiere/<int:id_matiere>/
 
-GET http://127.0.0.1:8000/notes/matiere/101/
+
+Recuperer les notes d'une inscription (eleve) en toutes les matières
+GET http://127.0.0.1:8000/notes/notesGenerales/<int:id_inscription>
 
 
-Recuperer LES MOYENNES PAR inscription 
 
-GET http://127.0.0.1:8000/notes/moyennes/1/
 

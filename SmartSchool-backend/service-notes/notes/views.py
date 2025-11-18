@@ -35,41 +35,49 @@ class UpdateNote(APIView):
         return Response(serializer.errors, status=400)
 
 
-# 📥 Récupérer les notes d'une inscription avec trimestres calculés
-class NotesByInscription(APIView):
-    def get(self, request, id_inscription):
-        notes = Note.objects.filter(id_inscription=id_inscription)
+class NotesByInscriptionByMatiere(APIView):
+    def get(self, request, id_inscription, id_matiere):
+
+        # Filtrer par inscription + matière
+        notes = Note.objects.filter(
+            id_inscription=id_inscription,
+            id_matiere=id_matiere
+        )
+
         result = []
 
         for note in notes:
             sequences = {
                 f"sequence{i}": getattr(note, f"sequence{i}")
-                for i in range(1, 7)
+                for i in range(1, 6+1)
             }
 
             # Calcul automatique des trimestres
             trimestres = {
                 "trimestre1": (
-                    (sequences["sequence1"] or 0) + (sequences["sequence2"] or 0)
+                    (sequences["sequence1"] or 0) +
+                    (sequences["sequence2"] or 0)
                 ) / 2,
                 "trimestre2": (
-                    (sequences["sequence3"] or 0) + (sequences["sequence4"] or 0)
+                    (sequences["sequence3"] or 0) +
+                    (sequences["sequence4"] or 0)
                 ) / 2,
                 "trimestre3": (
-                    (sequences["sequence5"] or 0) + (sequences["sequence6"] or 0)
+                    (sequences["sequence5"] or 0) +
+                    (sequences["sequence6"] or 0)
                 ) / 2,
             }
 
             result.append({
-                "id_inscription":note.id_inscription,
+                "id_inscription": note.id_inscription,
                 "id_matiere": note.id_matiere,
-                "id_enseignant": note.id_enseignant,   # <-- ajouté ici
+                "id_enseignant": note.id_enseignant,
                 "sequences": sequences,
                 "trimestres": trimestres,
-                
             })
 
         return Response(result)
+
 
 # 📥 Récupérer les notes d'une matière
 class NotesByMatiere(APIView):
@@ -79,9 +87,9 @@ class NotesByMatiere(APIView):
         return Response(serializer.data)
 
 
-# GET moyennes par inscription (séquences et trimestres)
+# GET notes par inscription (séquences et trimestres)
 @api_view(['GET'])
-def moyennes_par_inscription(request, id_inscription):
+def notes_par_inscription(request, id_inscription):
     notes = Note.objects.filter(id_inscription=id_inscription)
     if not notes.exists():
         return Response({"error": "Aucune note trouvée pour cette inscription"}, status=404)

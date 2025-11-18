@@ -2,10 +2,11 @@ from django.urls import path
 from .views import (
     CreateNote,
     UpdateNote,
-    NotesByInscription,
+    NotesByInscriptionByMatiere,
     NotesByMatiere,
+    
 )
-from .views import moyennes_par_inscription
+from .views import notes_par_inscription
 
 urlpatterns = [
     # CREATE
@@ -14,10 +15,10 @@ urlpatterns = [
     # UPDATE
     path("update/<int:id_inscription>/<int:id_matiere>/", UpdateNote.as_view()),
 
-    # GET by inscription
-    path("inscription/<int:id_inscription>/", NotesByInscription.as_view()),
+    # GET by inscription by matiere
+    path("inscription/<int:id_inscription>/<int:id_matiere>/", NotesByInscriptionByMatiere.as_view()),
 
     # GET by matiere
     path("matiere/<int:id_matiere>/", NotesByMatiere.as_view()),
-    path("moyennes/<int:id_inscription>/", moyennes_par_inscription)
+    path("notesGenerales/<int:id_inscription>/", notes_par_inscription)
 ]
