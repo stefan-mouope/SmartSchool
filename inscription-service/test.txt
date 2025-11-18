@@ -1,0 +1,31 @@
+{
+	"email":"dir@ecole.com",
+  "username": "dir_mamadou",
+  "password": "123456"
+}
+
+
+http://localhost:8000/api/auth/login/
+
+
+commnde pour lancer rabbitmq :    sudo systemctl restart rabbitmq-server
+
+
+
+http://localhost:5000/api/inscriptions
+
+
+{
+  "student": {
+    "matricule": "STD2025-001",
+    "last_name": "Doe",
+    "first_name": "John",
+    "birth_date": "2010-05-15",
+    "adress": "Yaoundé, Omnisport",
+    "sex": "M",
+    "phone_parent": "690112233",
+    "school_id": 1
+  },
+  "academieYear_id": 2,
+  "classRoom_id": 5
+}
