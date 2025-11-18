@@ -4,11 +4,44 @@ from rest_framework import status
 from .models import Note
 from .serializsers import NoteSerializer
 from rest_framework.decorators import api_view
+from .rabbitmq import rpc_client as rabbit_client
 
 
-# ➕ Créer une note pour une inscription + matière
+
 class CreateNote(APIView):
     def post(self, request, id_inscription, id_matiere):
+
+        # 🔍 Vérifier inscription via RabbitMQ
+        verify_inscription = rabbit_client.call(
+            "note.verify.inscription",
+            {
+                "event": "verify_inscription",
+                "data": { "id_inscription": id_inscription }
+            }
+        )
+
+        if not verify_inscription.get("status"):
+            return Response(
+                {"error": "Inscription introuvable"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # 🔍 Vérifier matière via RabbitMQ
+        verify_matiere = rabbit_client.call(
+            "note.verify.matiere",
+            {
+                "event": "verify_matiere",
+                "data": { "id_matiere": id_matiere }
+            }
+        )
+
+        if not verify_matiere.get("status"):
+            return Response(
+                {"error": "Matière introuvable"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # 🔵 Si OK → créer la note
         data = request.data.copy()
         data["id_inscription"] = id_inscription
         data["id_matiere"] = id_matiere
@@ -17,9 +50,8 @@ class CreateNote(APIView):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
 # 🔄 Mettre à jour une note existante
 class UpdateNote(APIView):
     def put(self, request, id_inscription, id_matiere):

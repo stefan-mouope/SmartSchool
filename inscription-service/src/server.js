@@ -7,6 +7,11 @@ import { Student, Inscription, Tranche, Payer } from "./models/associations.js";
 import eurekaClient from "./eureka/eurekaClient.js";
 import { connectRabbitMQ } from "./config/rabbitmq.js";
 
+import { startVerifyInscriptionConsumer } from "./consumers/verifyInscriptionConsumer.js";
+
+startVerifyInscriptionConsumer();
+
+
 const PORT = process.env.PORT || 5000;
 
 (async () => {
