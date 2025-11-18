@@ -9,8 +9,8 @@ import "./modules/registration/models"; // ← Définit les modèles
 import { setupAssociations } from "./modules/registration/association";
 
 // 2. CONNEXION RABBITMQ + CONSUMER
-import { connectRabbitMQ } from "./modules/registration/evnts/rabbitmq";
-import { startInscriptionRequestConsumer } from "./modules/registration/evnts/consumers/inscriprionConsumer";
+import { connectRabbitMQ } from "./modules/registration/events/rabbitmq";
+import { startInscriptionRequestConsumer } from "./modules/registration/events/consumers/inscriprionConsumer";
 
 const PORT = config.port;
 

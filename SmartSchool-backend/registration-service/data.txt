@@ -1,0 +1,69 @@
+
+
+====== superuser=======
+
+{
+    "email":"sup111@ecole.com",
+  "username": "dir_mamadous",
+  "password": "123456",
+  "role":"superuser"
+}
+
+
+
+
+http://localhost:3000/api/schools
+
+
+
+
+==== SCHOOLS =====
+{
+  "name": "Lycée Bilingue de Yaoundé",
+  "email": "contact@lby.cm",
+  "phone_school": "+237650123456",
+  "region": "Centre",
+  "city": "Yaoundé",
+  "location": "Nkolbisson, face entrée ENS",
+  "founded_year": 1998
+}
+
+===== ACADEMIC YEAR =====
+{
+  "start_date": "2024-09-01",
+  "end_date": "2025-06-30"
+}
+
+===== DIRECTOR =====
+{
+  "school_id": 1,
+  "user_id": 5,
+  "last_name": "Ngassa",
+  "first_name": "Brigitte",
+  "password": "securePass2024",
+  "birth_date": "1980-11-03",
+  "sex": "F"
+}
+
+===== TEACHER =====
+{
+  "school_id": 1,
+  "user_id": 10,
+  "last_name": "Kamdem",
+  "first_name": "Flavien",
+  "password": "password123",
+  "birth_date": "1990-05-12",
+  "sex": "M"
+}
+
+===== MATTER =====
+{
+  "name": "Mathématiques",
+  "school_id": 1
+}
+
+===== CLASSROOM =====
+{
+  "name": "6ème A",
+  "school_id": 1
+}

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { TeacherService } from "./teacher.service";
+import { publishDynamiqueEvent } from "../events/rabbitmq";
 
 const teacherService = new TeacherService();
 
@@ -7,9 +8,40 @@ export class TeacherController {
   // Créer un professeur
   async create(req: Request, res: Response) {
     try {
+      // Générer automatiquement le username
+      const username = `${req.body.first_name.toLowerCase()}.${req.body.last_name.toLowerCase()}`;
+
+      // Préparer le payload pour Django
+      const payload = {
+        ...req.body,
+        role: "enseignant",
+        username: username
+      };
+
+      // Publier l'événement RPC et attendre la réponse Django
+      const rpcResponse = await publishDynamiqueEvent(
+        "registration_events",
+        payload,
+        "registration.create.teacher" // routing key
+      );
+
+      console.log("📥 Réponse RPC Django :", rpcResponse);
+
+      if (!rpcResponse.success) {
+        return res.status(400).json({ error: rpcResponse.error });
+      }
+
+      // Créer l'enseignant dans le microservice Node
       const teacher = await teacherService.create(req.body);
-      res.status(201).json(teacher);
+
+      // Réponse finale
+      res.status(201).json({
+        success: true,
+        user_system: rpcResponse.user,
+        teacher_service: teacher,
+      });
     } catch (error: any) {
+      console.error("❌ Erreur controller create_teacher:", error);
       res.status(400).json({ error: error.message });
     }
   }

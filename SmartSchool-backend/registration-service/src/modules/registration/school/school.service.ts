@@ -19,7 +19,7 @@ export class SchoolService {
   async create(data: any) {
     const transaction: Transaction = await sequelize.transaction();
     try {
-      // ✅ On inclut la création de l’école dans la transaction
+      //  On inclut la création de l’école dans la transaction
       const school = await School.create(data, { transaction });
 
       const classrooms = this.defaultClasses.map((name) => ({

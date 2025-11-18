@@ -27,6 +27,7 @@
     "@types/eureka-js-client": "^4.5.9",
     "@types/express": "^5.0.5",
     "@types/node": "^24.10.1",
+    "@types/sequelize": "^4.28.20",
     "@types/uuid": "^10.0.0",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.3"

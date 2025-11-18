@@ -150,7 +150,7 @@ AUTH_USER_MODEL = 'app_auth.User'
 import requests
 import os
 
-CONFIG_SERVER_URL = "http://localhost:8080/auth-service/default"
+CONFIG_SERVER_URL = "http://localhost:8000/auth-service/default"
 
 try:
     response = requests.get(CONFIG_SERVER_URL)
