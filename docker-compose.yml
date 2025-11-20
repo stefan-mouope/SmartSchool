@@ -1,0 +1,153 @@
+version: '3.8'
+
+networks:
+  bank-network:
+    driver: bridge
+
+services:
+  # ------------------------
+  # Spring Boot Services
+  # ------------------------
+  bank-config-service:
+    build: ./smartSchool-config/bank-config-service
+    container_name: bank-config-service
+    ports:
+      - "8000:8000"
+    environment:
+      - SPRING_APPLICATION_NAME=bank-config-service
+      - SERVER_PORT=8000
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_URI=https://github.com/sandjonyves/repo-config.git
+    networks:
+      - bank-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  bank-registry-service:
+    build: ./smartSchool-config/bank-registry-service
+    container_name: bank-registry-service
+    ports:
+      - "8761:8761"
+    environment:
+      - SPRING_APPLICATION_NAME=bank-registry-service
+      - SERVER_PORT=8761
+      - SPRING_CLOUD_CONFIG_URI=http://bank-config-service:8000
+      - SPRING_CONFIG_IMPORT=configserver:http://bank-config-service:8000
+    depends_on:
+      bank-config-service:
+        condition: service_healthy
+    networks:
+      - bank-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  bank-proxy-service:
+    build: ./smartSchool-config/bank-proxy-service
+    container_name: bank-proxy-service
+    ports:
+      - "8079:8079"
+    environment:
+      - SPRING_APPLICATION_NAME=bank-proxy-service
+      - SERVER_PORT=8079
+      - SPRING_CLOUD_CONFIG_URI=http://bank-config-service:8000
+      - SPRING_CONFIG_IMPORT=configserver:http://bank-config-service:8000
+    depends_on:
+      bank-config-service:
+        condition: service_healthy
+      bank-registry-service:
+        condition: service_healthy
+    networks:
+      - bank-network
+
+  # registration-service-spring:
+  #   build: ./SmartSchool-backend/registration-service-sprin
+  #   container_name: registration-service-spring
+  #   ports:
+  #     - "8081:8080"
+  #   environment:
+  #     - SPRING_CLOUD_CONFIG_URI=http://bank-config-service:8000
+  #   depends_on:
+  #     bank-config-service:
+  #       condition: service_healthy
+  #     bank-registry-service:
+  #       condition: service_healthy
+  #   networks:
+  #     - bank-network
+
+  # ------------------------
+  # Django Services
+  # ------------------------
+  service-notes:
+    build: ./SmartSchool-backend/service-notes
+    container_name: service-notes
+    command: bash -c "python manage.py runserver 0.0.0.0:8001"
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./SmartSchool-backend/service-notes:/app
+    networks:
+      - bank-network
+
+  systeme-authentification:
+    build: ./SmartSchool-backend/systeme_authentification
+    container_name: systeme-authentification
+    command: python manage.py runserver 0.0.0.0:8002
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./SmartSchool-backend/systeme_authentification:/app
+    networks:
+      - bank-network
+
+  # ------------------------
+  # Express.js Services
+  # ------------------------
+  inscription-service:
+    build: ./SmartSchool-backend/inscription-service
+    container_name: inscription-service
+    ports:
+      - "3001:3000"
+    command: npm start
+    volumes:
+      - ./SmartSchool-backend/inscription-service:/app
+    networks:
+      - bank-network
+    depends_on:
+      - service-notes
+      - systeme-authentification
+
+  registration-service-express:
+    build: ./SmartSchool-backend/registration-service
+    container_name: registration-service-express
+    ports:
+      - "3002:3000"
+    command: npm start
+    volumes:
+      - ./SmartSchool-backend/registration-service:/app
+    networks:
+      - bank-network
+    depends_on:
+      - service-notes
+      - systeme-authentification
+
+  # ------------------------
+  # Frontend React
+  # ------------------------
+  smartschool-front:
+    container_name: smartschool-front
+    build: ./SmartSchool-front
+    ports:
+      - "3000:3000"
+    command: npm start
+    volumes:
+      - ./SmartSchool-front:/app
+    networks:
+      - bank-network
+    depends_on:
+      - inscription-service
+      - registration-service-express

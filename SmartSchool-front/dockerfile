@@ -1,0 +1,18 @@
+# Utilise Node pour construire et exécuter
+FROM node:20-alpine
+
+# Crée le répertoire de travail
+WORKDIR /app
+
+# Copie les fichiers package et installe les dépendances
+COPY package*.json ./
+RUN npm install
+
+# Copie le reste des fichiers
+COPY . .
+
+# Expose le port de ton app React
+EXPOSE 3000
+
+# Lance l'application
+CMD ["npm", "start"]
