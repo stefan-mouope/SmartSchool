@@ -1,12 +1,10 @@
 # notes/rabbitmq.py
-import json
-import logging
-import os
-import time
-import uuid
-from typing import Any
-
 import pika
+import json
+import uuid
+import logging
+from typing import Any
+import time
 logger = logging.getLogger(__name__)
 
 class RabbitMQRPCClient:
@@ -19,20 +17,9 @@ class RabbitMQRPCClient:
 
     def _connect(self):
         """Connexion + création de la callback queue"""
-        rabbitmq_url = os.environ.get("RABBITMQ_URL")
-        if rabbitmq_url:
-            parameters = pika.URLParameters(rabbitmq_url)
-        else:
-            parameters = pika.ConnectionParameters(
-                host=os.environ.get("RABBITMQ_HOST", "localhost"),
-                port=int(os.environ.get("RABBITMQ_PORT", "5672")),
-                credentials=pika.PlainCredentials(
-                    os.environ.get("RABBITMQ_USER", "guest"),
-                    os.environ.get("RABBITMQ_PASSWORD", "guest"),
-                ),
-            )
-
-        self.connection = pika.BlockingConnection(parameters)
+        self.connection = pika.BlockingConnection(
+            pika.ConnectionParameters(host="localhost")
+        )
         self.channel = self.connection.channel()
 
         # Queue exclusive pour recevoir les réponses RPC

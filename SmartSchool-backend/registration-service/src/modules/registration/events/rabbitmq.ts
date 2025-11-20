@@ -2,9 +2,6 @@
 import amqp, { Channel, Replies, ConsumeMessage } from "amqplib";
 import { v4 as uuidv4 } from "uuid";
 
-const RABBITMQ_URL = process.env.RABBITMQ_URL || "amqp://localhost";
-const RABBITMQ_EXCHANGE = process.env.RABBITMQ_EXCHANGE || "inscription_events";
-
 let channel: Channel | null = null;
 let replyQueue: Replies.AssertQueue | null = null;
 
@@ -20,11 +17,11 @@ const pendingResponses = new Map<
 export const connectRabbitMQ = async (): Promise<void> => {
   if (channel) return; // Déjà connecté
 
-  const connection = await amqp.connect(RABBITMQ_URL);
+  const connection = await amqp.connect("amqp://localhost");
   channel = await connection.createChannel();
 
   // Exchange utilisé pour tous les events du service inscription
-  await channel.assertExchange(RABBITMQ_EXCHANGE, "topic", { durable: false });
+  await channel.assertExchange("inscription_events", "topic", { durable: false });
 
   // Création de la replyQueue (RPC Response Queue)
   replyQueue = await channel.assertQueue("", { exclusive: true });
@@ -96,7 +93,7 @@ export const callRpc = async (
 
     // Envoi du message RPC
     getChannel().publish(
-      RABBITMQ_EXCHANGE,
+      "inscription_events",
       routingKey,
       Buffer.from(JSON.stringify({ data })),
       {
@@ -118,7 +115,7 @@ export const consumeEvent = async (
   const ch = getChannel();
 
   await ch.assertQueue(queueName, { durable: false });
-  await ch.bindQueue(queueName, RABBITMQ_EXCHANGE, routingKey);
+  await ch.bindQueue(queueName, "inscription_events", routingKey);
 
   console.log(`👂 Consumer prêt → queue: ${queueName} | rk: ${routingKey}`);
 
@@ -156,7 +153,7 @@ export const publishEvent = async <T = any>(
     pendingResponses.set(correlationId, { resolve, reject });
 
     channel!.publish(
-      RABBITMQ_EXCHANGE,
+      "inscription_events",
       routingKey,
       Buffer.from(JSON.stringify(event)),
       {

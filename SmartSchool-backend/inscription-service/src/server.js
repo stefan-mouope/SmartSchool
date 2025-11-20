@@ -15,10 +15,11 @@ const PORT = process.env.PORT || 5000;
     // -------------------------
     // Synchronisation des modèles
     // -------------------------
-    await Student.sync({ alter: true });
-    await Tranche.sync({ alter: true });
-    await Inscription.sync({ alter: true });
-    await Payer.sync({ alter: true });
+    await Student.sync();
+    await Tranche.sync();
+    await Inscription.sync();
+    await Payer.sync();
+
     console.log("🗄️  Modèles synchronisés avec la base de données.");
 
     // -------------------------

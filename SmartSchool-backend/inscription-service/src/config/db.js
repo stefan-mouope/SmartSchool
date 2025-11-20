@@ -7,13 +7,10 @@ import { dirname } from "path";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const storagePath =
-  process.env.DATABASE_STORAGE || path.join(__dirname, "../../database.sqlite");
-
 // Crée une instance Sequelize pour SQLite
 const sequelize = new Sequelize({
   dialect: "sqlite",
-  storage: storagePath, // le fichier local
+  storage: path.join(__dirname, "../../database.sqlite"), // le fichier local
   logging: false, // désactive les logs SQL
 });
 

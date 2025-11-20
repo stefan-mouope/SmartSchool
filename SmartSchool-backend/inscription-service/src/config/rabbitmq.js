@@ -2,9 +2,6 @@
 import amqp from "amqplib";
 import { v4 as uuidv4 } from "uuid";
 
-const RABBITMQ_URL = process.env.RABBITMQ_URL || "amqp://localhost";
-const RABBITMQ_EXCHANGE = process.env.RABBITMQ_EXCHANGE || "inscription_events";
-
 let channel = null;
 let replyQueue = null;
 
@@ -16,11 +13,11 @@ const pendingResponses = new Map();
  */
 export const connectRabbitMQ = async () => {
   try {
-    const connection = await amqp.connect(RABBITMQ_URL);
+    const connection = await amqp.connect("amqp://localhost");
     channel = await connection.createChannel();
 
     // Déclare l'exchange commun
-    await channel.assertExchange(RABBITMQ_EXCHANGE, "topic", { durable: false });
+    await channel.assertExchange("inscription_events", "topic", { durable: false });
 
     // Queue de réponse RPC (exclusive → supprimée à la fin)
     replyQueue = await channel.assertQueue("", { exclusive: true });
@@ -70,7 +67,7 @@ export const publishEvent = async (event, routingKey = "inscription.request") =>
     pendingResponses.set(correlationId, { resolve, reject });
 
     channel.publish(
-      RABBITMQ_EXCHANGE,
+      "inscription_events",
       routingKey,
       Buffer.from(JSON.stringify(event)),
       {
@@ -94,7 +91,7 @@ export const consumeEvent = async (routingKey, queueName, callback) => {
   if (!channel) throw new Error("❌ RabbitMQ non initialisé");
 
   await channel.assertQueue(queueName, { durable: true });
-  await channel.bindQueue(queueName, RABBITMQ_EXCHANGE, routingKey);
+  await channel.bindQueue(queueName, "inscription_events", routingKey);
 
   console.log(`👂 Consumer actif : Queue=${queueName} → RoutingKey=${routingKey}`);
 

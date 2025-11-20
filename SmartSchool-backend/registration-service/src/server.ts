@@ -11,6 +11,7 @@ import { setupAssociations } from "./modules/registration/association";
 // 2. CONNEXION RABBITMQ + CONSUMER
 import { connectRabbitMQ } from "./modules/registration/events/rabbitmq";
 import { startInscriptionRequestConsumer } from "./modules/registration/events/consumers/inscriprionConsumer";
+import { startVerifyMatiereConsumer } from "./modules/registration/events/consumers/verifyMatiereConsumer";
 
 const PORT = config.port;
 
@@ -27,6 +28,9 @@ const PORT = config.port;
     // ÉTAPE 3 : DÉMARRER LES CONSUMERS
     await startInscriptionRequestConsumer();
     console.log("Consommateur 'inscription.request' démarré");
+
+    await startVerifyMatiereConsumer();
+    console.log("Consommateur 'matiere.verify' démarré");
 
     // ÉTAPE 4 : SYNCHRONISER LA BASE DE DONNÉES
     await sequelize.sync({ force: false });
