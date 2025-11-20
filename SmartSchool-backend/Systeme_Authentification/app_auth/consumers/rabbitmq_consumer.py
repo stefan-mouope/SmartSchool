@@ -97,7 +97,7 @@ def verify_and_refresh_token(access_token: str, refresh_token: str = None) -> di
 # ---------------------------------------
 # 🔥 CONSUMER 1 → AUTH VERIFY + ROLES
 # ---------------------------------------
-class RabbitMQAuthConsumer(threading.Thread):
+class RabbitMQConsumer(threading.Thread):
     def __init__(self):
         super().__init__(daemon=True)
         self.queue_name = "auth_verify_queue"
