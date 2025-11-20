@@ -45,4 +45,13 @@ const Student = sequelize.define("Student", {
   timestamps: false,
 });
 
+// 🔹 Génération automatique du matricule
+Student.beforeCreate(async (student, options) => {
+  if (!student.matricule) {
+    const year = new Date().getFullYear();
+    const count = await Student.count() + 1;
+    student.matricule = `STD${year}-${count.toString().padStart(3, '0')}`;
+  }
+});
+
 export default Student;

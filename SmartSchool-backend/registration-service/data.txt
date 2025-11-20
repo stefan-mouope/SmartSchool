@@ -43,10 +43,14 @@ http://localhost:3000/api/directors
   "last_name": "Ngassa",
   "first_name": "Brigitte",
   "password": "securePass2024",
-  "email":"directeur@gmail.com",  
+	"username": "stefan",
+  "email":"stefan@gmail.com",
+	"role":"directeur",
   "birth_date": "1980-11-03",
   "sex": "F"
 }
+
+pour login http://localhost:8001/api/login/
 
 ===== TEACHER =====
 http://localhost:3000/api/teachers
