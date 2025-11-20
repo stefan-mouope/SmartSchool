@@ -1,49 +1,65 @@
-
-
-// 🔗 Connexion à RabbitMQ et configuration du consommateur
+// rabbitmq.js
 import amqp from "amqplib";
 import { v4 as uuidv4 } from "uuid";
 
-let channel;
-let replyQueue;
+let channel = null;
+let replyQueue = null;
+
+// Map correlationId → { resolve, reject }
 const pendingResponses = new Map();
 
+/**
+ * 🔌 Connexion à RabbitMQ + configuration RPC
+ */
 export const connectRabbitMQ = async () => {
-  const connection = await amqp.connect("amqp://localhost");
-  channel = await connection.createChannel();
+  try {
+    const connection = await amqp.connect("amqp://localhost");
+    channel = await connection.createChannel();
 
-  // Déclare un exchange
-  await channel.assertExchange("inscription_events", "topic", { durable: false });
+    // Déclare l'exchange commun
+    await channel.assertExchange("inscription_events", "topic", { durable: false });
 
-  // Déclare une queue de réponse exclusive
-  replyQueue = await channel.assertQueue("", { exclusive: true });
+    // Queue de réponse RPC (exclusive → supprimée à la fin)
+    replyQueue = await channel.assertQueue("", { exclusive: true });
 
-  console.log("✅ Connecté à RabbitMQ, queue de réponse :", replyQueue.queue);
+    console.log("✅ RabbitMQ connecté — Reply queue :", replyQueue.queue);
 
-  // Écoute les réponses
-  channel.consume(
-    replyQueue.queue,
-    (msg) => {
-      if (!msg.properties.correlationId) return;
+    /**
+     * 🎧 Consommation des réponses RPC
+     */
+    channel.consume(
+      replyQueue.queue,
+      (msg) => {
+        if (!msg.properties?.correlationId) return;
 
-      const correlationId = msg.properties.correlationId;
-      const pending = pendingResponses.get(correlationId);
+        const correlationId = msg.properties.correlationId;
+        const pending = pendingResponses.get(correlationId);
 
-      if (pending) {
-        const response = JSON.parse(msg.content.toString());
-        pending.resolve(response); // Répond à la promesse en attente
-        pendingResponses.delete(correlationId);
-      }
-    },
-    { noAck: true }
-  );
+        if (pending) {
+          try {
+            const response = JSON.parse(msg.content.toString());
+            pending.resolve(response);
+          } catch (e) {
+            pending.reject(e);
+          }
+          pendingResponses.delete(correlationId);
+        }
+      },
+      { noAck: true }
+    );
+
+  } catch (err) {
+    console.error("❌ ERREUR connexion RabbitMQ :", err);
+    throw err;
+  }
 };
 
 /**
- * Publie un événement et attend la réponse du consommateur
+ * 📤 Envoie un événement via RabbitMQ (mode RPC)
+ * — Attend la réponse du consumer Python/Django
  */
-export const publishEvent = async (event,routingKey='inscription.request') => {
-  if (!channel) throw new Error("❌ Channel RabbitMQ non initialisé");
+export const publishEvent = async (event, routingKey = "inscription.request") => {
+  if (!channel) throw new Error("❌ RabbitMQ non initialisé");
 
   const correlationId = uuidv4();
 
@@ -54,13 +70,39 @@ export const publishEvent = async (event,routingKey='inscription.request') => {
       "inscription_events",
       routingKey,
       Buffer.from(JSON.stringify(event)),
-      { replyTo: replyQueue.queue, correlationId, persistent: true }
+      {
+        replyTo: replyQueue.queue,
+        correlationId,
+        persistent: true
+      }
     );
 
-    console.log("📤 Événement publié :", event, "correlationId:", correlationId);
+    console.log("📤 Event envoyé :", event, "→ correlationId:", correlationId);
   });
 
-  // Retourne la réponse quand elle arrive
   return promise;
 };
 
+/**
+ * 👂 Consumer générique (non-RPC)
+ * — Pour écouter des events "fire and forget"
+ */
+export const consumeEvent = async (routingKey, queueName, callback) => {
+  if (!channel) throw new Error("❌ RabbitMQ non initialisé");
+
+  await channel.assertQueue(queueName, { durable: true });
+  await channel.bindQueue(queueName, "inscription_events", routingKey);
+
+  console.log(`👂 Consumer actif : Queue=${queueName} → RoutingKey=${routingKey}`);
+
+  channel.consume(queueName, async (msg) => {
+    try {
+      const content = JSON.parse(msg.content.toString());
+      await callback(content, msg, channel);
+      channel.ack(msg);
+    } catch (err) {
+      console.error("❌ Erreur consumer :", err);
+      channel.nack(msg, false, false); // on rejette le msg
+    }
+  });
+};

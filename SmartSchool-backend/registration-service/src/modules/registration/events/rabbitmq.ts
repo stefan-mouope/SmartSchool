@@ -1,71 +1,135 @@
-// rabbitmq.ts
-import amqp, { Replies, Channel } from "amqplib";
-import { v4 as UUIDV4 } from "uuid";
+// modules/registration/events/rabbitmq.ts
+import amqp, { Channel, Replies, ConsumeMessage } from "amqplib";
+import { v4 as uuidv4 } from "uuid";
 
 let channel: Channel | null = null;
 let replyQueue: Replies.AssertQueue | null = null;
 
+// Map pour gérer les réponses RPC
 const pendingResponses = new Map<
   string,
-  { resolve: (value: any) => void; reject: (reason?: any) => void }
+  { resolve: (value: any) => void; reject: (err: any) => void }
 >();
 
-// ✅ Connexion RabbitMQ
+// ---------------------------------------------------------
+// 🔌 Connexion à RabbitMQ
+// ---------------------------------------------------------
 export const connectRabbitMQ = async (): Promise<void> => {
   if (channel) return; // Déjà connecté
 
   const connection = await amqp.connect("amqp://localhost");
   channel = await connection.createChannel();
 
+  // Exchange utilisé pour tous les events du service inscription
   await channel.assertExchange("inscription_events", "topic", { durable: false });
 
-  // 🔥 Crée la replyQueue pour recevoir les réponses RPC
+  // Création de la replyQueue (RPC Response Queue)
   replyQueue = await channel.assertQueue("", { exclusive: true });
 
-  // 🔥 Consommer la replyQueue
+  console.log("🐰 RabbitMQ connecté. ReplyQueue :", replyQueue.queue);
+
+  // Consumer de la replyQueue (gestion RPC)
   channel.consume(
     replyQueue.queue,
     (msg) => {
       if (!msg) return;
+
       const correlationId = msg.properties.correlationId;
-      const resolver = pendingResponses.get(correlationId);
-      if (resolver) {
-        resolver.resolve(JSON.parse(msg.content.toString()));
+      if (!correlationId) return;
+
+      const pending = pendingResponses.get(correlationId);
+      if (!pending) return;
+
+      try {
+        pending.resolve(JSON.parse(msg.content.toString()));
+      } catch (err) {
+        pending.reject(err);
+      } finally {
         pendingResponses.delete(correlationId);
       }
     },
     { noAck: true }
   );
-
-  console.log("🐰 Connecté à RabbitMQ, exchange 'inscription_events' prêt et replyQueue créée.");
 };
 
-// ✅ Obtenir le channel
+// ---------------------------------------------------------
+// 📡 Obtenir le channel
+// ---------------------------------------------------------
 export const getChannel = (): Channel => {
   if (!channel) throw new Error("RabbitMQ non connecté. Appelez connectRabbitMQ() d'abord.");
   return channel;
 };
 
-// ✅ Abonnement à un événement
+export const getReplyQueue = (): string => {
+  if (!replyQueue) throw new Error("ReplyQueue non initialisée");
+  return replyQueue.queue;
+};
+
+// ---------------------------------------------------------
+// 📤 Appel RPC (client → autre service)
+// ---------------------------------------------------------
+export const callRpc = async (
+  routingKey: string,
+  data: any,
+  timeoutMs = 10000
+): Promise<any> => {
+  const correlationId = uuidv4();
+
+  return new Promise((resolve, reject) => {
+    // Timeout de sécurité
+    const timer = setTimeout(() => {
+      pendingResponses.delete(correlationId);
+      reject(new Error(`RPC Timeout → ${routingKey}`));
+    }, timeoutMs);
+
+    // Enregistrer l’attente
+    pendingResponses.set(correlationId, {
+      resolve: (res) => {
+        clearTimeout(timer);
+        resolve(res);
+      },
+      reject,
+    });
+
+    // Envoi du message RPC
+    getChannel().publish(
+      "inscription_events",
+      routingKey,
+      Buffer.from(JSON.stringify({ data })),
+      {
+        correlationId,
+        replyTo: getReplyQueue(),
+      }
+    );
+  });
+};
+
+// ---------------------------------------------------------
+// 👂 Consume Event (écoute d’événements → handler)
+// ---------------------------------------------------------
 export const consumeEvent = async (
   routingKey: string,
   queueName: string,
-  handler: (event: any, msg: amqp.ConsumeMessage, channel: Channel) => Promise<void>
-) => {
+  handler: (event: any, msg: ConsumeMessage, channel: Channel) => Promise<void>
+): Promise<void> => {
   const ch = getChannel();
-  const { queue } = await ch.assertQueue(queueName, { durable: false });
-  await ch.bindQueue(queue, "inscription_events", routingKey);
+
+  await ch.assertQueue(queueName, { durable: false });
+  await ch.bindQueue(queueName, "inscription_events", routingKey);
+
+  console.log(`👂 Consumer prêt → queue: ${queueName} | rk: ${routingKey}`);
 
   ch.consume(
-    queue,
+    queueName,
     async (msg) => {
       if (!msg) return;
+
       try {
         const event = JSON.parse(msg.content.toString());
         await handler(event, msg, ch);
         ch.ack(msg);
       } catch (err) {
-        console.error("Erreur handler:", err);
+        console.error("Erreur dans le consumer:", err);
         ch.nack(msg, false, false);
       }
     },
@@ -73,76 +137,75 @@ export const consumeEvent = async (
   );
 };
 
-// ✅ Publier un événement RPC
+// ---------------------------------------------------------
+// 📤 Publish RPC (réponse attendue)
+// ---------------------------------------------------------
 export const publishEvent = async <T = any>(
   event: T,
   routingKey: string = "inscription.request"
 ): Promise<any> => {
-  if (!channel) throw new Error("❌ Channel RabbitMQ non initialisé");
-  if (!replyQueue) throw new Error("❌ replyQueue non initialisée");
+  if (!channel) throw new Error("Channel RabbitMQ non initialisé");
+  if (!replyQueue) throw new Error("ReplyQueue non initialisée");
 
-  const correlationId = UUIDV4();
+  const correlationId = uuidv4();
 
   return new Promise<any>((resolve, reject) => {
     pendingResponses.set(correlationId, { resolve, reject });
 
-    channel.publish(
+    channel!.publish(
       "inscription_events",
       routingKey,
       Buffer.from(JSON.stringify(event)),
       {
         replyTo: replyQueue.queue,
         correlationId,
-        persistent: true,
+        persistent: false,
       }
     );
 
-    console.log("📤 Événement publié :", event, "correlationId:", correlationId);
-
-    // ❌ Optionnel : timeout si pas de réponse
+    // Timeout si pas de réponse
     setTimeout(() => {
       if (pendingResponses.has(correlationId)) {
         pendingResponses.get(correlationId)?.reject(new Error("Timeout RabbitMQ"));
         pendingResponses.delete(correlationId);
       }
-    }, 10000); // 10s
+    }, 10000);
   });
 };
 
-
-// ✅ Publier un événement RPC
+// ---------------------------------------------------------
+// 📤 Publish dynamique (exchange variable)
+// ---------------------------------------------------------
 export const publishDynamiqueEvent = async <T = any>(
   exchange: string,
   event: T,
-  routingKey: string 
+  routingKey: string
 ): Promise<any> => {
-  if (!channel) throw new Error("❌ Channel RabbitMQ non initialisé");
-  if (!replyQueue) throw new Error("❌ replyQueue non initialisée");
+  if (!channel) throw new Error("Channel RabbitMQ non initialisé");
+  if (!replyQueue) throw new Error("ReplyQueue non initialisée");
 
-  const correlationId = UUIDV4();
+  const correlationId = uuidv4();
 
   return new Promise<any>((resolve, reject) => {
     pendingResponses.set(correlationId, { resolve, reject });
 
-    channel.publish(
+    channel!.publish(
       exchange,
       routingKey,
       Buffer.from(JSON.stringify(event)),
       {
         replyTo: replyQueue.queue,
         correlationId,
-        persistent: true,
+        persistent: false,
       }
     );
 
-    console.log("📤 Événement publié :", event, "correlationId:", correlationId);
-
-    // ❌ Optionnel : timeout si pas de réponse
+    // Timeout
     setTimeout(() => {
       if (pendingResponses.has(correlationId)) {
         pendingResponses.get(correlationId)?.reject(new Error("Timeout RabbitMQ"));
         pendingResponses.delete(correlationId);
       }
-    }, 10000); // 10s
+    }, 10000);
   });
 };

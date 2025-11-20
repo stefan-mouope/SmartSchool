@@ -1,178 +1,233 @@
-import pika
 import json
 import threading
-from rest_framework_simplejwt.tokens import AccessToken
-from django.db import transaction
-from app_auth.serializers import RegisterSerializer  
+import logging
+import pika
+from datetime import datetime
 
-class RabbitMQConsumer(threading.Thread):
+from django.contrib.auth import get_user_model
+from django.db import transaction
+
+# JWT
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.exceptions import InvalidToken
+from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
+from rest_framework_simplejwt.settings import api_settings
+
+# Serializers
+from app_auth.serializers import RegisterSerializer
+
+User = get_user_model()
+jwt_auth = JWTAuthentication()
+logger = logging.getLogger(__name__)
+
+# -----------------------------
+# 🔥 ACTIONS AUTORISÉES PAR RÔLE
+# -----------------------------
+ALLOWED_ACTIONS = {
+    "superuser": ["create_ecole", "create_director"],
+    "directeur": [
+        "create_eleve", "delete_eleve", "create_inscription",
+        "create_teacher", "create_classroom", "create_matter",
+        "create_academicYear"
+    ],
+    "enseignant": ["create_note", "update_note", "view_notes"],
+    "caissier": ["view_paiements"],
+    "secretaire": ["view_eleves"]
+}
+
+# ----------------------------------
+# 🔥 FONCTIONS DE REFRESH DES TOKENS
+# ----------------------------------
+def get_refreshed_tokens(refresh_token_str: str) -> dict:
+    try:
+        refresh = RefreshToken(refresh_token_str)
+        refresh.check_exp()
+        if api_settings.BLACKLIST_AFTER_ROTATION:
+            refresh.check_blacklist()
+
+        return {
+            "success": True,
+            "access_token": str(refresh.access_token),
+            "refresh_token": str(refresh)
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def verify_and_refresh_token(access_token: str, refresh_token: str = None) -> dict:
+    try:
+        validated = jwt_auth.get_validated_token(access_token)
+        user = jwt_auth.get_user(validated)
+        payload = validated.payload
+
+        return {
+            "valid": True,
+            "needs_refresh": False,
+            "user_id": payload.get("user_id"),
+            "username": getattr(user, "username", payload.get("username")),
+            "role": payload.get("role"),
+            "access_token": access_token
+        }
+
+    except InvalidToken:
+        if not refresh_token:
+            return {"valid": False, "error": "Token expiré, refresh manquant"}
+
+        refreshed = get_refreshed_tokens(refresh_token)
+        if not refreshed["success"]:
+            return {"valid": False, "error": "Refresh échoué"}
+
+        new_access = refreshed["access_token"]
+
+        validated = jwt_auth.get_validated_token(new_access)
+        user = jwt_auth.get_user(validated)
+        payload = validated.payload
+
+        return {
+            "valid": True,
+            "needs_refresh": True,
+            "user_id": payload.get("user_id"),
+            "username": getattr(user, "username", payload.get("username")),
+            "role": payload.get("role"),
+            "new_access_token": new_access,
+            "new_refresh_token": refreshed["refresh_token"]
+        }
+
+
+# ---------------------------------------
+# 🔥 CONSUMER 1 → AUTH VERIFY + ROLES
+# ---------------------------------------
+class RabbitMQAuthConsumer(threading.Thread):
     def __init__(self):
         super().__init__(daemon=True)
         self.queue_name = "auth_verify_queue"
 
     def run(self):
+        host = "rabbitmq" if "docker" in open("/proc/1/cgroup").read() else "localhost"
+
         connection = pika.BlockingConnection(
             pika.ConnectionParameters(
-                host='rabbitmq' if 'docker' in open('/proc/1/cgroup').read() else 'localhost',
+                host=host,
                 port=5672,
-                credentials=pika.PlainCredentials('guest', 'guest')
+                credentials=pika.PlainCredentials("guest", "guest")
             )
         )
         channel = connection.channel()
 
-        # 🔥 Node publie sur inscription_events → donc on déclare l'exchange
-        channel.exchange_declare(
-            exchange="inscription_events",
-            exchange_type="topic",
-            durable=False
-        )
-
-        # 🔥 Declare queue
+        channel.exchange_declare(exchange="inscription_events", exchange_type="topic", durable=False)
         channel.queue_declare(queue=self.queue_name, durable=True)
+        channel.queue_bind(exchange="inscription_events", queue=self.queue_name, routing_key="auth.verify")
 
-        # 🔥 Bind queue → exchange
-        channel.queue_bind(
-            exchange="inscription_events",
-            queue=self.queue_name,
-            routing_key="auth.verify"  # même routingKey que Node.js
-        )
+        print("🔥 AuthConsumer RabbitMQ démarré... (auth.verify)")
 
-        print("📌 Queue liée à l'exchange inscription_events (routingKey=auth.verify)")
-
-        # --- CALLBACK RPC ---
         def callback(ch, method, properties, body):
-            data = json.loads(body)
-            token = data.get('token')
-            action = data.get('action', '')
-
-            response = {'valid': False, 'error': 'Token invalide'}
-
             try:
-                decoded = AccessToken(token)
-                role = decoded.get("role", "")
-                username = decoded.get("username", "")
-                user_id = decoded.get("user_id", "")
+                data = json.loads(body)
+                access = data.get("token")
+                refresh = data.get("refresh_token")
+                action = data.get("action", "")
 
-                print("🎫 TOKEN DECODE:", decoded)
-                print(f"🔐 Vérification action '{action}' pour rôle '{role}'")
+                result = verify_and_refresh_token(access, refresh)
 
-                allowed = {
-                    'superuser':['create_ecole','create_director'],
-                    'directeur': ['create_eleve', 'create_inscription', 'delete_eleve','create_teacher','create_classroom','create_matter','create_academicYear'],
-                    'caissier': ['view_paiements'],
-                    'secretaire': ['view_eleves']
+                # ❌ Token invalide
+                if not result["valid"]:
+                    self.send_rpc_response(ch, properties, {"valid": False, "error": result["error"]})
+                    return
+
+                role = result.get("role")
+
+                # ❌ Action non autorisée
+                if action not in ALLOWED_ACTIONS.get(role, []):
+                    self.send_rpc_response(ch, properties, {
+                        "valid": False,
+                        "error": f"Action '{action}' interdite pour rôle '{role}'"
+                    })
+                    return
+
+                # ✅ Réponse OK
+                response = {
+                    "valid": True,
+                    "user_id": result["user_id"],
+                    "username": result["username"],
+                    "role": role
                 }
 
-                if action not in allowed.get(role, []):
-                    response = {
-                        'valid': False,
-                        'error': "f'Action '{action}' non autorisée pour '{role}'"
+                if result.get("needs_refresh"):
+                    response["refresh"] = {
+                        "access_token": result["new_access_token"],
+                        "refresh_token": result["new_refresh_token"],
                     }
-                else:
-                    response = {
-                        'valid': True,
-                        'user_id': user_id,
-                        'username': username,
-                        'role': role
-                    }
+
+                self.send_rpc_response(ch, properties, response)
 
             except Exception as e:
-                response = {"valid": False, "error": str(e)}
-
-            # 🔥 Réponse RPC obligatoire !!!
-            ch.basic_publish(
-                exchange="",
-                routing_key=properties.reply_to,
-                properties=pika.BasicProperties(
-                    correlation_id=properties.correlation_id
-                ),
-                body=json.dumps(response)
-            )
+                logger.error(f"Erreur callback AuthConsumer : {e}")
+                self.send_rpc_response(ch, properties, {"valid": False, "error": str(e)})
 
             ch.basic_ack(delivery_tag=method.delivery_tag)
 
-        print("Django Consumer RabbitMQ démarré...")
         channel.basic_consume(queue=self.queue_name, on_message_callback=callback)
         channel.start_consuming()
 
+    @staticmethod
+    def send_rpc_response(ch, properties, data):
+        ch.basic_publish(
+            exchange="",
+            routing_key=properties.reply_to,
+            properties=pika.BasicProperties(correlation_id=properties.correlation_id),
+            body=json.dumps(data, ensure_ascii=False)
+        )
 
+
+# ---------------------------------------
+# 🔥 CONSUMER 2 → CREATE_DIRECTOR (INSCRIPTION)
+# ---------------------------------------
 class RabbitMQRegistrationConsumer(threading.Thread):
     def __init__(self):
         super().__init__(daemon=True)
         self.queue_name = "registration_queue"
 
     def run(self):
-        print("📌 RabbitMQ RegistrationConsumer started...")
+        host = "rabbitmq" if "docker" in open("/proc/1/cgroup").read() else "localhost"
 
         connection = pika.BlockingConnection(
             pika.ConnectionParameters(
-                host='rabbitmq' if 'docker' in open('/proc/1/cgroup').read() else 'localhost',
+                host=host,
                 port=5672,
-                credentials=pika.PlainCredentials('guest', 'guest')
+                credentials=pika.PlainCredentials("guest", "guest")
             )
         )
         channel = connection.channel()
 
-        # Exchange
-        channel.exchange_declare(
-            exchange="registration_events",
-            exchange_type="topic",
-            durable=True
-        )
-
-        # Queue
+        channel.exchange_declare(exchange="registration_events", exchange_type="topic", durable=True)
         channel.queue_declare(queue=self.queue_name, durable=True)
+        channel.queue_bind(exchange="registration_events", queue=self.queue_name, routing_key="create_director")
 
-        # ⛔ AVANT → create_* (ne fonctionne PAS)
-        # ✅ MAINTENANT → écoute tous les create.*
-        channel.queue_bind(
-            exchange="registration_events",
-            queue=self.queue_name,
-            routing_key="create_director"
-        )
-
-        print("📩 Listening registration_events (routingKey=create_director)")
+        print("🔥 RegistrationConsumer RabbitMQ démarré... (create_director)")
 
         def callback(ch, method, properties, body):
-            routing_key = method.routing_key  # ex: registration.create.director
             payload = json.loads(body)
 
-            print(f"\n📥 Event reçu → {routing_key}")
-            print("💾 Data :", payload)
+            try:
+                with transaction.atomic():
+                    serializer = RegisterSerializer(data=payload)
+                    serializer.is_valid(raise_exception=True)
+                    user = serializer.save()
 
-            role = payload.get("role")
-            if not role:
-                response = {"success": False, "error": "role manquant"}
-            else:
-                try:
-                    with transaction.atomic():
-                        serializer = RegisterSerializer(data=payload)
-                        serializer.is_valid(raise_exception=True)
-                        user = serializer.save()
-
-                        print(f"✅ Compte créé ({user.role}) → {user.email}")
-
-                        response = {
-                            "success": True,
-                            "message": f"Compte {role} créé",
-                            "user": serializer.data
-                        }
-
-                except Exception as e:
-                    print("❌ Erreur création compte :", str(e))
                     response = {
-                        "success": False,
-                        "error": str(e)
+                        "success": True,
+                        "message": f"Compte {user.role} créé",
+                        "user": serializer.data
                     }
 
-            # RPC RESPONSE
+            except Exception as e:
+                response = {"success": False, "error": str(e)}
+
             if properties.reply_to:
                 channel.basic_publish(
                     exchange="",
                     routing_key=properties.reply_to,
-                    properties=pika.BasicProperties(
-                        correlation_id=properties.correlation_id
-                    ),
+                    properties=pika.BasicProperties(correlation_id=properties.correlation_id),
                     body=json.dumps(response)
                 )
 

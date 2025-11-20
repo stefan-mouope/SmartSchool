@@ -1,6 +1,6 @@
 from django.db import models
 
-# Create your models here.
+
 
 class Note(models.Model):
     id_inscription = models.IntegerField()
@@ -14,11 +14,6 @@ class Note(models.Model):
     sequence4 = models.FloatField(null=True, blank=True)
     sequence5 = models.FloatField(null=True, blank=True)
     sequence6 = models.FloatField(null=True, blank=True)
-
-    # 3 trimestres
-    # trimestre1 = models.FloatField(null=True, blank=True)
-    # trimestre2 = models.FloatField(null=True, blank=True)
-    # trimestre3 = models.FloatField(null=True, blank=True)
 
     class Meta:
         unique_together = ("id_inscription", "id_matiere")
