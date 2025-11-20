@@ -14,39 +14,45 @@ from django.utils.decorators import method_decorator
 class CreateNote(APIView):
 
     def post(self, request, id_inscription, id_matiere):
-        
-        # Vérifier inscription via RabbitMQ
-        verify_inscription = rabbit_client.call(
-            "inscription.verify",
-            {
-                "event": "verify_inscription",
-                "data": { "id_inscription": id_inscription }
-            }
-        )
-        if not verify_inscription.get("status"):
-            return Response({"error": "Inscription introuvable"}, status=404)
+        try:
+            # Vérifier inscription via RabbitMQ
+            verify_inscription = rabbit_client.call(
+                "inscription.verify",
+                {
+                    "event": "verify_inscription",
+                    "data": {"id_inscription": id_inscription}
+                }
+            )
+            if not verify_inscription.get("status"):
+                return Response({"error": "Inscription introuvable"}, status=404)
 
-        # Vérifier matière via RabbitMQ
-        verify_matiere = rabbit_client.call(
-            "matiere.verify",
-            {
-                "event": "verify_matiere",
-                "data": { "id_matiere": id_matiere }
-            }
-        )
-        if not verify_matiere.get("status"):
-            return Response({"error": "Matière introuvable"}, status=404)
+            # Vérifier matière via RabbitMQ
+            verify_matiere = rabbit_client.call(
+                "matiere.verify",
+                {
+                    "event": "verify_matiere",
+                    "data": {"id_matiere": id_matiere}
+                }
+            )
+            if not verify_matiere.get("status"):
+                return Response({"error": "Matière introuvable"}, status=404)
 
-        # Création
-        data = request.data.copy()
-        data["id_inscription"] = id_inscription
-        data["id_matiere"] = id_matiere
+            # Création
+            data = request.data.copy()
+            data["id_inscription"] = id_inscription
+            data["id_matiere"] = id_matiere
 
-        serializer = NoteSerializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=201)
-        return Response(serializer.errors, status=400)
+            serializer = NoteSerializer(data=data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=201)
+            else:
+                print("Serializer errors:", serializer.errors)
+                return Response(serializer.errors, status=400)
+        except Exception as e:
+            print("Erreur CreateNote:", e)
+            return Response({"error": str(e)}, status=500)
+
 
 # 🔄 Mettre à jour une note existante
 class UpdateNote(APIView):

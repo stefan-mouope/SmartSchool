@@ -1,8 +1,10 @@
 import json
-import threading
 import logging
-import pika
+import os
+import threading
 from datetime import datetime
+
+import pika
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
@@ -30,7 +32,7 @@ ALLOWED_ACTIONS = {
         "create_teacher", "create_classroom", "create_matter",
         "create_academicYear"
     ],
-    "enseignant": ["create_note", "update_note", "view_notes"],
+    "enseignant": ["create_note", "update_note", "view_notes","create_inscription","create_eleve"],
     "caissier": ["view_paiements"],
     "secretaire": ["view_eleves"]
 }
@@ -97,21 +99,32 @@ def verify_and_refresh_token(access_token: str, refresh_token: str = None) -> di
 # ---------------------------------------
 # 🔥 CONSUMER 1 → AUTH VERIFY + ROLES
 # ---------------------------------------
+
+RABBITMQ_URL = os.getenv("RABBITMQ_URL")
+RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "localhost")
+RABBITMQ_PORT = int(os.getenv("RABBITMQ_PORT", "5672"))
+RABBITMQ_USER = os.getenv("RABBITMQ_USER", "guest")
+RABBITMQ_PASSWORD = os.getenv("RABBITMQ_PASSWORD", "guest")
+
+
+def _build_connection_parameters():
+    if RABBITMQ_URL:
+        return pika.URLParameters(RABBITMQ_URL)
+
+    return pika.ConnectionParameters(
+        host=RABBITMQ_HOST,
+        port=RABBITMQ_PORT,
+        credentials=pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASSWORD),
+    )
+
+
 class RabbitMQConsumer(threading.Thread):
     def __init__(self):
         super().__init__(daemon=True)
         self.queue_name = "auth_verify_queue"
 
     def run(self):
-        host = "rabbitmq" if "docker" in open("/proc/1/cgroup").read() else "localhost"
-
-        connection = pika.BlockingConnection(
-            pika.ConnectionParameters(
-                host=host,
-                port=5672,
-                credentials=pika.PlainCredentials("guest", "guest")
-            )
-        )
+        connection = pika.BlockingConnection(_build_connection_parameters())
         channel = connection.channel()
 
         channel.exchange_declare(exchange="inscription_events", exchange_type="topic", durable=False)
@@ -188,15 +201,7 @@ class RabbitMQRegistrationConsumer(threading.Thread):
         self.queue_name = "registration_queue"
 
     def run(self):
-        host = "rabbitmq" if "docker" in open("/proc/1/cgroup").read() else "localhost"
-
-        connection = pika.BlockingConnection(
-            pika.ConnectionParameters(
-                host=host,
-                port=5672,
-                credentials=pika.PlainCredentials("guest", "guest")
-            )
-        )
+        connection = pika.BlockingConnection(_build_connection_parameters())
         channel = connection.channel()
 
         channel.exchange_declare(exchange="registration_events", exchange_type="topic", durable=True)

@@ -1,0 +1,117 @@
+version: "3.9"
+
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+
+  # eureka:
+  #   image: springcloud/eureka
+  #   ports:
+  #     - "8761:8761"
+
+  systeme-authentication:
+    build:
+      context: ./SmartSchool-backend/Systeme_Authentification
+    environment:
+      PORT: 8001
+      DJANGO_DEBUG: "false"
+      DJANGO_ALLOWED_HOSTS: "*"
+      DATABASE_STORAGE: /data/db.sqlite3
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      - rabbitmq
+      # - eureka
+    ports:
+      - "8001:8001"
+    volumes:
+      - auth_data:/data
+
+  registration-service:
+    build:
+      context: ./SmartSchool-backend/registration-service
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      RABBITMQ_EXCHANGE: inscription_events
+      # EUREKA_HOST: eureka
+      # EUREKA_PORT: 8761
+      SERVICE_HOST: registration-service
+      SERVICE_IP: registration-service
+      DATABASE_STORAGE: /data/database.sqlite
+    depends_on:
+      - rabbitmq
+      # - eureka
+    ports:
+      - "3000:3000"
+    volumes:
+      - registration_data:/data
+
+  inscription-service:
+    build:
+      context: ./SmartSchool-backend/inscription-service
+    environment:
+      PORT: 5000
+      NODE_ENV: production
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      RABBITMQ_EXCHANGE: inscription_events
+      # EUREKA_HOST: eureka
+      # EUREKA_PORT: 8761
+      SERVICE_HOST: inscription-service
+      SERVICE_IP: inscription-service
+      DATABASE_STORAGE: /data/database.sqlite
+    depends_on:
+      - rabbitmq
+      # - eureka
+      - registration-service
+      - systeme-authentication
+    ports:
+      - "5000:5000"
+    volumes:
+      - inscription_data:/data
+
+  service-notes:
+    build:
+      context: ./SmartSchool-backend/service-notes
+    environment:
+      PORT: 8001
+      DJANGO_DEBUG: "false"
+      DJANGO_ALLOWED_HOSTS: "*"
+      DATABASE_STORAGE: /data/db.sqlite3
+      EUREKA_SERVER: http://eureka:8761/eureka
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      - rabbitmq
+      # - eureka
+      - registration-service
+    ports:
+      - "8001:8001"
+    volumes:
+      - service_notes_data:/data
+
+  smartschool-front:
+    build:
+      context: ./SmartSchool-front
+      args:
+        VITE_API_BASE_URL: http://localhost:8000
+        VITE_REGISTRATION_SERVICE_URL: http://localhost:3000/api
+    depends_on:
+      - systeme-authentication
+      - registration-service
+      - service-notes
+      - inscription-service
+    ports:
+      - "8080:80"
+
+volumes:
+  inscription_data:
+  registration_data:
+  service_notes_data:
+  auth_data:
+

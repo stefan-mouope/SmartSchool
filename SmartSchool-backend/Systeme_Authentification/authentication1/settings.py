@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -20,16 +21,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-1mdh90siwm@ws*e^g&t=f6wdp#3a*d#600vi&1+)*gscvvs_b_'
+SECRET_KEY = os.environ.get(
+    "DJANGO_SECRET_KEY", "django-insecure-1mdh90siwm@ws*e^g&t=f6wdp#3a*d#600vi&1+)*gscvvs_b_"
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-ALLOWED_HOSTS = [
-    "localhost",
-    "127.0.0.1",
-    "0.0.0.0",
-    "yvanna-latitude-e6440",  # si nécessaire
-]
+DEBUG = os.environ.get("DJANGO_DEBUG", "false").lower() == "true"
+ALLOWED_HOSTS = os.environ.get(
+    "DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,0.0.0.0"
+).split(",")
 
 
 
@@ -83,9 +83,9 @@ WSGI_APPLICATION = 'authentication1.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": os.environ.get("DATABASE_STORAGE", BASE_DIR / "db.sqlite3"),
     }
 }
 
@@ -124,7 +124,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = "static/"
+STATIC_ROOT = os.environ.get("DJANGO_STATIC_ROOT", BASE_DIR / "staticfiles")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -148,9 +149,10 @@ AUTH_USER_MODEL = 'app_auth.User'
 
 
 import requests
-import os
 
-CONFIG_SERVER_URL = "http://localhost:8000/auth-service/default"
+CONFIG_SERVER_URL = os.environ.get(
+    "CONFIG_SERVER_URL", "http://localhost:8000/auth-service/default"
+)
 
 try:
     response = requests.get(CONFIG_SERVER_URL)
