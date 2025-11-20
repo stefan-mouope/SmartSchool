@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { School, User, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-
+import { useAuth } from "@/hooks/useAuth";   // ✅ Ajouté
 
 const LoginPage = () => {
+  const { login } = useAuth();  // ✅ Hook pour appeler le backend
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -12,7 +14,7 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setError('');
     setIsLoading(true);
 
@@ -35,13 +37,24 @@ const LoginPage = () => {
       return;
     }
 
-    // Simulation de connexion
-    setTimeout(() => {
+    // Connexion réelle via le backend
+    try {
+      const ok = await login(email, password); // 🔥 Appel au backend via Zustand
+
       setIsLoading(false);
-      alert('Connexion réussie ! Redirection vers le tableau de bord...');
-      // Ici, vous pouvez rediriger vers l'application principale
-      // window.location.href = '/dashboard';
-    }, 1500);
+
+      if (ok) {
+        // Redirection après connexion réussie
+        window.location.href = "/dashboard";
+        return;
+      }
+
+      setError("Identifiants incorrects");
+    } catch (err) {
+      console.error(err);
+      setIsLoading(false);
+      setError("Identifiants incorrects");
+    }
   };
 
   const handleKeyPress = (e) => {
@@ -69,7 +82,7 @@ const LoginPage = () => {
           <p className="text-blue-200 text-lg">Système de Gestion Scolaire</p>
         </div>
 
-        {/* Formulaire de connexion */}
+        {/* Formulaire */}
         <div className="bg-white rounded-3xl shadow-2xl p-8 backdrop-blur-sm">
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-gray-800 text-center mb-2">Connexion</h2>
@@ -88,7 +101,7 @@ const LoginPage = () => {
           )}
 
           <div className="space-y-6">
-            {/* Champ Email */}
+            {/* Email */}
             <div>
               <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
                 Adresse email
@@ -109,7 +122,7 @@ const LoginPage = () => {
               </div>
             </div>
 
-            {/* Champ Mot de passe */}
+            {/* Mot de passe */}
             <div>
               <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
                 Mot de passe
@@ -152,15 +165,12 @@ const LoginPage = () => {
                   Se souvenir de moi
                 </span>
               </label>
-              <Button
-                variant="link"
-                className="text-sm font-semibold p-0 h-auto"
-              >
+              <Button variant="link" className="text-sm font-semibold p-0 h-auto">
                 Mot de passe oublié ?
               </Button>
             </div>
 
-            {/* Bouton de connexion */}
+            {/* Bouton Connexion */}
             <Button
               onClick={handleSubmit}
               disabled={isLoading}
@@ -181,7 +191,7 @@ const LoginPage = () => {
             </Button>
           </div>
 
-          {/* Informations supplémentaires */}
+          {/* Infos bas */}
           <div className="mt-8 pt-6 border-t border-gray-200">
             <p className="text-center text-sm text-gray-600">
               Vous n'avez pas de compte ?{' '}
@@ -195,21 +205,13 @@ const LoginPage = () => {
         {/* Footer */}
         <div className="mt-8 text-center space-y-4">
           <div className="flex items-center justify-center space-x-6 text-sm">
-            <Button variant="link" className="text-blue-200 hover:text-white p-0 h-auto">
-              Aide
-            </Button>
+            <Button variant="link" className="text-blue-200 hover:text-white p-0 h-auto">Aide</Button>
             <span className="text-blue-300">•</span>
-            <Button variant="link" className="text-blue-200 hover:text-white p-0 h-auto">
-              Support technique
-            </Button>
+            <Button variant="link" className="text-blue-200 hover:text-white p-0 h-auto">Support technique</Button>
             <span className="text-blue-300">•</span>
-            <Button variant="link" className="text-blue-200 hover:text-white p-0 h-auto">
-              Confidentialité
-            </Button>
+            <Button variant="link" className="text-blue-200 hover:text-white p-0 h-auto">Confidentialité</Button>
           </div>
-          <p className="text-blue-300 text-sm">
-            © 2024 SmartSchool. Tous droits réservés.
-          </p>
+          <p className="text-blue-300 text-sm">© 2024 SmartSchool. Tous droits réservés.</p>
         </div>
       </div>
     </div>
