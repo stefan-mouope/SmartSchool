@@ -19,6 +19,36 @@
             "projectName": "bank-registry-service",
             "args": "",
             "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-ConfigServiceApplication<config-service>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.configservice.config_service.ConfigServiceApplication",
+            "projectName": "config-service",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-RegistryServiceApplication<registry-service>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.school.registry_service.RegistryServiceApplication",
+            "projectName": "registry-service",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-ProxyServiceApplication<proxy-service>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.school.proxy_service.ProxyServiceApplication",
+            "projectName": "proxy-service",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
         }
     ]
 }

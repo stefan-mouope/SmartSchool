@@ -7,8 +7,8 @@ import atexit
 # -------------------------
 # Configuration du service
 # -------------------------
-APP_NAME = "NOTE-SERVICE"         # Nom du service pour Gateway
-INSTANCE_PORT = 8002               # Port de ton service Django
+APP_NAME = "AUTH-SERVICE"         # Nom du service pour Gateway
+INSTANCE_PORT = 8001               # Port de ton service Django
 
 def get_host_ip():
     """Retourne l'IP réelle de la machine accessible par Eureka/Gateway."""
