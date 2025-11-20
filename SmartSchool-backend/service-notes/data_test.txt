@@ -1,6 +1,6 @@
 generer le bulletins par trimestre 
 
-POST  http://127.0.0.1:8000/api/bulletins/generer/
+POST  http://localhost:8000/api/bulletins/generer/
 
 
 {
@@ -21,20 +21,33 @@ generer le bulletins par sequence
 
 
 creer une note quelconque 
-POST http://127.0.0.1:8000/notes/create/1/36/
+POST http://localhost:8000/notes/create/1/36/
 
 
 Recuperer toutes les notes d'une inscription 
 
-GET http://127.0.0.1:8000/notes/inscription/1/
+GET http://localhost:8000/notes/inscription/1/
 
 
 Récupérer toutes les notes d’une matière
 
-GET http://127.0.0.1:8000/notes/matiere/101/
+GET http://localhost:8000/notes/matiere/101/
 
 
 Recuperer LES MOYENNES PAR inscription 
 
-GET http://127.0.0.1:8000/notes/moyennes/1/
+GET http://localhost:8000/notes/moyennes/1/
+
+
+http://localhost:8000/notes/create/1/1/
+
+{
+    "sequence1": 12,
+    "sequence2": 14,
+    "sequence3": 15,
+    "sequence4": 13,
+    "sequence5": 16,
+    "sequence6": 14,
+    "id_enseignant": 7
+}
 

@@ -1,0 +1,4 @@
+FROM eclipse-temurin:17-jre
+VOLUME /tmp
+ADD target/bank-registry-service.jar bank-registry-service.jar
+ENTRYPOINT ["java", "-jar", "/bank-registry-service.jar"]

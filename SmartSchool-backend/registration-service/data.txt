@@ -29,23 +29,27 @@ http://localhost:3000/api/schools
 }
 
 ===== ACADEMIC YEAR =====
+http://localhost:3000/api/academic-years
 {
   "start_date": "2024-09-01",
   "end_date": "2025-06-30"
 }
 
 ===== DIRECTOR =====
+http://localhost:3000/api/directors
 {
   "school_id": 1,
   "user_id": 5,
   "last_name": "Ngassa",
   "first_name": "Brigitte",
   "password": "securePass2024",
+  "email":"directeur@gmail.com",  
   "birth_date": "1980-11-03",
   "sex": "F"
 }
 
 ===== TEACHER =====
+http://localhost:3000/api/teachers
 {
   "school_id": 1,
   "user_id": 10,
@@ -53,6 +57,7 @@ http://localhost:3000/api/schools
   "first_name": "Flavien",
   "password": "password123",
   "birth_date": "1990-05-12",
+  "email":"teacher@gmail.com",
   "sex": "M"
 }
 

@@ -1,0 +1,19 @@
+http://0.0.0.0:8001/api/auth/register/
+
+
+{
+  "email": "enseignant1@test.com",
+  "username": "prof_maths",
+  "password": "12345678"
+}
+
+
+
+http://0.0.0.0:8001/api/auth/login/
+
+
+{
+  "email": "enseignant1@test.com",
+  "username": "prof_maths",
+  "password": "12345678"
+}
