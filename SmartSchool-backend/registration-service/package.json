@@ -19,6 +19,7 @@
     "dotenv": "^17.2.3",
     "eureka-js-client": "^4.5.0",
     "express": "^5.1.0",
+    "morgan": "^1.10.1",
     "sequelize": "^6.37.7",
     "sqlite3": "^5.1.7",
     "uuid": "^13.0.0"
@@ -28,6 +29,7 @@
     "@types/cors": "^2.8.19",
     "@types/eureka-js-client": "^4.5.9",
     "@types/express": "^5.0.5",
+    "@types/morgan": "^1.9.10",
     "@types/node": "^24.10.1",
     "@types/sequelize": "^4.28.20",
     "@types/uuid": "^10.0.0",

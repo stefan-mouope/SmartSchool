@@ -24,7 +24,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         ('directeur', 'Directeur'),
         ('enseignant', 'Enseignant'),
     ]
-    user_id = models.IntegerField(unique=True, null=True, blank=True)
+    registrie_id = models.IntegerField(unique=True, null=True, blank=True)
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=100)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='enseignant')

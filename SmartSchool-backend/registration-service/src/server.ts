@@ -13,6 +13,8 @@ import { connectRabbitMQ } from "./modules/registration/events/rabbitmq";
 import { startInscriptionRequestConsumer } from "./modules/registration/events/consumers/inscriprionConsumer";
 import { startVerifyMatiereConsumer } from "./modules/registration/events/consumers/verifyMatiereConsumer";
 
+
+
 const PORT = config.port;
 
 (async () => {

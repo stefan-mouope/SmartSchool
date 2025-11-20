@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import { SchoolService } from "./school.service";
+import { and, where } from "sequelize";
+import { Director, School } from "../models";
 
 const schoolService = new SchoolService();
 
@@ -13,9 +15,32 @@ export class SchoolController {
       res.status(400).json({ error: error.message });
     }
   }
+async findAllSchoolWithoutDirector(req: Request, res: Response) {
+  try {
+    console.log("test"); // pour vérifier que la fonction est appelée
 
-  // Récupérer toutes les écoles
-  async findAll(req: Request, res: Response) {
+    const schools = await School.findAll({
+      include: [
+        {
+          model: Director,
+          as: "director",      // doit correspondre à l'alias de School.hasOne(Director)
+          required: false,     // LEFT JOIN
+          attributes: ["id"],  // on a juste besoin de savoir s'il existe
+        },
+      ],
+      where: {
+        '$director.school_id$': null, // aucune école n'a de directeur
+      },
+    });
+
+    res.status(200).json(schools);
+  } catch (error: any) {
+    console.error("Erreur findAllSchoolWithoutDirector:", error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
+    async findAll(req: Request, res: Response) {
     try {
       const schools = await schoolService.findAll();
       res.status(200).json(schools);

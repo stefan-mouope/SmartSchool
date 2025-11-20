@@ -16,9 +16,11 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
-        token['user_id']=str(user.user_id)
+        token['user_id']=str(user.id)
+        token['registrie_id'] = str(user.registrie_id)
         token['role'] = user.role
         token['username'] = user.username
+        token['email'] = user.email
         return token
 
 # 2. Vue login qui utilise le serializer

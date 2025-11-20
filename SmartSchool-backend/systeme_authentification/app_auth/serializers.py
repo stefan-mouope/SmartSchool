@@ -6,7 +6,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'user_id','email', 'username', 'password', 'role')
+        fields = ('id', 'registrie_id','email', 'username', 'password', 'role')
 
         """
         le service d'enregistrement des utilisateurs reconnait deux type d'utilisateurs:
@@ -21,7 +21,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         password = validated_data.pop('password')
 
         if validated_data.get("role") != "superuser":
-            validated_data['user_id'] = validated_data.get('id')
+            validated_data['registrie_id'] = validated_data.get('id')
 
         user = User.objects.create_user(**validated_data)
         user.set_password(password)

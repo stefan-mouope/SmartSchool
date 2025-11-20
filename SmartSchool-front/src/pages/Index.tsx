@@ -13,6 +13,7 @@ import { PaiementsPage } from '@/pages/directeur/PaiementsPage';
 import { BulletinsPage } from '@/pages/directeur/BulletinsPage';
 import { EnseignantDashboard } from '@/pages/enseignant/EnseignantDashboard';
 import { NotesPage } from '@/pages/enseignant/NotesPage';
+import { DirecteursPage } from './super/DirectorPage';
 
 const Index = () => {
   const [currentUser, setCurrentUser] = useState<UserRole>('directeur');
@@ -25,20 +26,13 @@ const Index = () => {
     if (currentUser === 'super') {
       switch (currentPage) {
         case 'dashboard':
-          return <SuperDashboard onAddEtablissement={() => { setModalType('etablissement'); setShowModal(true); }} />;
+          return <SuperDashboard  />;
         case 'etablissements':
-          return <EtablissementsPage onAddEtablissement={() => { setModalType('etablissement'); setShowModal(true); }} />;
+          return <EtablissementsPage  />;
         case 'directeurs':
-          return (
-            <div>
-              <h2 className="text-2xl font-bold text-foreground mb-6">Gestion des Directeurs</h2>
-              <div className="bg-card rounded-lg shadow-md p-6">
-                <p className="text-muted-foreground">Liste des directeurs avec leurs établissements assignés...</p>
-              </div>
-            </div>
-          );
+          return <DirecteursPage />;
         default:
-          return <SuperDashboard onAddEtablissement={() => { setModalType('etablissement'); setShowModal(true); }} />;
+          return <SuperDashboard  />;
       }
     }
 

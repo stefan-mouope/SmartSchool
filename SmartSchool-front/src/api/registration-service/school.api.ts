@@ -38,4 +38,8 @@ export const getSchoolById = async (id: number):Promise<schoolResult>  => {
   const response = await api.get<schoolResult>(`${BASE_REGISTRATION}/api/schools/${id}`);
   return response.data;
 }
-
+export const findAllSchoolWithoutDirector = async (): Promise<schoolResult[]> => {
+  const response = await api.get<schoolResult[]>(`${BASE_REGISTRATION}/api/schools/without-director`);
+  console.log(response.data)
+  return response.data;
+};

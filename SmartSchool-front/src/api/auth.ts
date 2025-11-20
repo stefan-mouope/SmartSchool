@@ -8,17 +8,34 @@ interface Loginresult{
 
 }
 
+interface RegisterResult{
+  email:string,
+  username:string,
+  password:string,
+  role:string,
+}
+
+export const registerRequest = async (
+ data:RegisterResult
+): Promise<RegisterResult> => {
+  const res = await api.post<RegisterResult>(`${BASE_AUTH_SERVICE}/api/auth/register/`,data );
+  console.log('rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr',res.data);
+  return res.data
+};
+
+
 export const loginRequest = async (
   email: string,
   password: string
 ): Promise<Loginresult> => {
   const res = await api.post<Loginresult>(`${BASE_AUTH_SERVICE}/api/auth/login/`, { email, password });
+
   return res.data;
 };
 
 
 export const logoutRequest = async (refresh: string) => {
-  const res = await api.post(`${BASE_AUTH_SERVICE}/auth/logout/`, { refresh });
+  const res = await api.post(`${BASE_AUTH_SERVICE}/api/auth/logout/`, { refresh });
   return res.data;
 };
 

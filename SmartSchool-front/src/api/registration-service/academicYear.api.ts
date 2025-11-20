@@ -11,8 +11,8 @@ interface AcademicYearType{
 
 interface AcademicYearTypeResponse{
     id:number,
-    start_data:string,
-    end_data:string
+    start_date:string,
+    end_date:string
 }
 
 
@@ -22,7 +22,7 @@ export const createAcademic = async (data: AcademicYearType):Promise<AcademicYea
 }
 
 
-export const getAcademicYearBySchoolId = async ():Promise<AcademicYearTypeResponse> => {
-    const response = await api.get<AcademicYearTypeResponse>(`${BASE_REGISTRATION}/api/academic-years/current`)
+export const getAcademicYearBySchoolId = async (schoolId:number):Promise<AcademicYearTypeResponse> => {
+    const response = await api.get<AcademicYearTypeResponse>(`${BASE_REGISTRATION}/api/academic-years/current/${schoolId}`);
     return response.data
 }
