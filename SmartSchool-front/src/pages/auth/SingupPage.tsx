@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 const SignupPage = () => {
   const { register } = useAuth(); //  Appel API d'inscription
 
-  const ROLE_OF_USER='superuser'; // rôle par défaut
+  const ROLE_OF_USER='directeur'; // rôle par défaut
 
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');

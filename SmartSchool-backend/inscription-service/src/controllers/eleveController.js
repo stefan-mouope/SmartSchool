@@ -1,16 +1,16 @@
 import { Student } from "../models/associations.js";
 
-// ➕ Créer un étudiant
+// ➕ Créer un étudiant avec matricule auto
 export const createStudent = async (req, res) => {
   try {
-    const { matricule, last_name, first_name, birth_date, adress, sex, phone_parent, school_id } = req.body;
+    const { last_name, first_name, birth_date, adress, sex, phone_parent, school_id } = req.body;
 
     if (!last_name || !first_name || !school_id) {
       return res.status(400).json({ message: "Champs requis manquants" });
     }
 
+    // ⚡ On ne passe pas matricule, il sera généré automatiquement par Sequelize
     const student = await Student.create({
-      matricule,
       last_name,
       first_name,
       birth_date,
@@ -26,6 +26,7 @@ export const createStudent = async (req, res) => {
     res.status(500).json({ message: "Erreur serveur", error });
   }
 };
+
 
 // 📄 Lister tous les étudiants
 export const getAllStudents = async (req, res) => {

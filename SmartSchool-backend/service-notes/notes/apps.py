@@ -1,6 +1,7 @@
 from django.apps import AppConfig
+from .eureka_client import start_eureka_registration
 
-class NotesConfig(AppConfig):
+class AuthAppConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'notes'
 
