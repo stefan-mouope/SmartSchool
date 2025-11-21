@@ -16,6 +16,17 @@ interface DataTableProps {
 }
 
 export const DataTable: React.FC<DataTableProps> = ({ columns, data, onEdit, onDelete }) => {
+  const getAlignClass = (align?: 'left' | 'center' | 'right') => {
+    switch (align) {
+      case 'center':
+        return 'text-center';
+      case 'right':
+        return 'text-right';
+      default:
+        return 'text-left';
+    }
+  };
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
@@ -24,7 +35,7 @@ export const DataTable: React.FC<DataTableProps> = ({ columns, data, onEdit, onD
             {columns.map((column) => (
               <th 
                 key={column.key} 
-                className={`px-6 py-3 text-sm font-medium text-muted-foreground text-${column.align || 'left'}`}
+                className={`px-6 py-3 text-sm font-medium text-muted-foreground ${getAlignClass(column.align)}`}
               >
                 {column.label}
               </th>
@@ -37,38 +48,56 @@ export const DataTable: React.FC<DataTableProps> = ({ columns, data, onEdit, onD
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
-          {data.map((row) => (
-            <tr key={row.id} className="hover:bg-muted/50 transition-colors">
-              {columns.map((column) => (
-                <td 
-                  key={column.key} 
-                  className={`px-6 py-4 text-sm text-${column.align || 'left'}`}
-                >
-                  {column.render ? column.render(row[column.key], row) : row[column.key]}
-                </td>
-              ))}
-              {(onEdit || onDelete) && (
-                <td className="px-6 py-4 text-center">
-                  {onEdit && (
-                    <button 
-                      onClick={() => onEdit(row.id)}
-                      className="text-primary hover:text-primary/80 mx-2 transition-colors"
-                    >
-                      <Edit2 size={18} />
-                    </button>
-                  )}
-                  {onDelete && (
-                    <button 
-                      onClick={() => onDelete(row.id)}
-                      className="text-destructive hover:text-destructive/80 mx-2 transition-colors"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  )}
-                </td>
-              )}
+          {data.length === 0 ? (
+            <tr>
+              <td 
+                colSpan={columns.length + (onEdit || onDelete ? 1 : 0)} 
+                className="px-6 py-8 text-center text-sm text-muted-foreground"
+              >
+                Aucune donnée disponible
+              </td>
             </tr>
-          ))}
+          ) : (
+            data.map((row) => (
+              <tr key={row.id} className="hover:bg-muted/50 transition-colors">
+                {columns.map((column) => (
+                  <td 
+                    key={column.key} 
+                    className={`px-6 py-4 text-sm ${getAlignClass(column.align)}`}
+                  >
+                    {column.render 
+                      ? column.render(row[column.key], row)
+                      : row[column.key]
+                    }
+                  </td>
+                ))}
+                {(onEdit || onDelete) && (
+                  <td className="px-6 py-4 text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      {onEdit && (
+                        <button 
+                          onClick={() => onEdit(row.id)}
+                          className="text-primary hover:text-primary/80 transition-colors p-1 rounded hover:bg-primary/10"
+                          title="Modifier"
+                        >
+                          <Edit2 size={18} />
+                        </button>
+                      )}
+                      {onDelete && (
+                        <button 
+                          onClick={() => onDelete(row.id)}
+                          className="text-destructive hover:text-destructive/80 transition-colors p-1 rounded hover:bg-destructive/10"
+                          title="Supprimer"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                )}
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>
