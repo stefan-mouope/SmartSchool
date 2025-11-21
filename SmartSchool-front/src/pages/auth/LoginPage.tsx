@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from "@/hooks/useAuth";   // ✅ Ajouté
 
 const LoginPage = () => {
-  const { login } = useAuth();  // ✅ Hook pour appeler le backend
+  const { login } = useAuth();  
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -45,7 +45,7 @@ const LoginPage = () => {
 
       if (ok) {
         // Redirection après connexion réussie
-        window.location.href = "/dashboard";
+        window.location.href = "/";
         return;
       }
 
