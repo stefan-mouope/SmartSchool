@@ -15,6 +15,7 @@
   "type": "commonjs",
   "dependencies": {
     "amqplib": "^0.10.9",
+    "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "eureka-js-client": "^4.5.0",
     "express": "^5.1.0",
@@ -24,6 +25,7 @@
   },
   "devDependencies": {
     "@types/amqplib": "^0.10.8",
+    "@types/cors": "^2.8.19",
     "@types/eureka-js-client": "^4.5.9",
     "@types/express": "^5.0.5",
     "@types/node": "^24.10.1",

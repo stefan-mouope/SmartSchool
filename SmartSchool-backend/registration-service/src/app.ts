@@ -1,8 +1,21 @@
 import express, { Application, Request, Response, NextFunction } from "express";
 import { registrationRoutes } from "./modules/registration";
 import { config } from "./config/env";
+import cors from "cors";
 
 const app: Application = express();
+
+const allowedOrigins = [
+  "http://localhost:8082",
+  "http://192.168.0.104:8082",
+  "http://localhost:3000",
+  "http://192.168.0.104:3000",
+];
+app.use((req, res, next) => {
+  next(); // rien du tout
+});
+// Important pour OPTIONS (prévol)
+// app.options("*", cors());
 
 // Middleware pour parser le JSON
 app.use(express.json());

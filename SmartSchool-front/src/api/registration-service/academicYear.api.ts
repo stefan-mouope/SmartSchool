@@ -17,12 +17,12 @@ interface AcademicYearTypeResponse{
 
 
 export const createAcademic = async (data: AcademicYearType):Promise<AcademicYearTypeResponse> =>{
-    const response = await api.post<AcademicYearTypeResponse>(`${BASE_REGISTRATION}/academic-years`, data)
+    const response = await api.post<AcademicYearTypeResponse>(`${BASE_REGISTRATION}/api/academic-years`, data)
     return response.data
 }
 
 
 export const getAcademicYearBySchoolId = async ():Promise<AcademicYearTypeResponse> => {
-    const response = await api.get<AcademicYearTypeResponse>(`${BASE_REGISTRATION}/academic-years/current`)
+    const response = await api.get<AcademicYearTypeResponse>(`${BASE_REGISTRATION}/api/academic-years/current`)
     return response.data
 }
