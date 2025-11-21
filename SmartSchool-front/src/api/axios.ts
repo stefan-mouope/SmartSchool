@@ -7,7 +7,7 @@ export const BASE_NOTE_SERVICE="NOTE-SERVICE"
 export const BASE_AUTH_SERVICE="AUTH-SERVICE"
 export const BASE_ISCRIPTION_SERVICE="INSCRIPTION-SERVICE"
 
-// Base URL: set VITE_API_BASE_URL in .env, default to Django local
+// Base URL: set VITE_API_BASE_URL in .env, default to Django local sds
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8081";
 
 export const api = axios.create({
