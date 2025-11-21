@@ -2,15 +2,16 @@
 import axios from "axios";
 
 
-export const BASE_REGISTRATION="REGISTRATION_SERVICE"
+export const BASE_REGISTRATION="REGISTRATION-SERVICE"
+export const BASE_NOTE_SERVICE="NOTE-SERVICE"
+export const BASE_AUTH_SERVICE="AUTH-SERVICE"
+export const BASE_ISCRIPTION_SERVICE="INSCRIPTION-SERVICE"
 
-
-
-// Base URL: set VITE_API_BASE_URL in .env, default to Django local sds
+// Base URL: set VITE_API_BASE_URL in .env, default to Django local
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8081";
 
 export const api = axios.create({
-  baseURL: `${API_BASE_URL}/api`,
+  baseURL: `${API_BASE_URL}`,
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
