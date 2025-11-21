@@ -4,27 +4,6 @@ import requests
 import socket
 import atexit
 
-<<<<<<< HEAD
-# Configuration
-EUREKA_SERVER = "http://localhost:8761/eureka/apps"
-APP_NAME = "NOTE_SERVICE"
-INSTANCE_PORT = 8000  # le port de ton service Django
-HOSTNAME = socket.gethostname()
-INSTANCE_ID = f"{HOSTNAME}:{APP_NAME}:{INSTANCE_PORT}"  # ID unique pour Eureka
-
-def get_host_ip():
-    return "127.0.0.1"  # ou ton IP réelle du PC
-
-
-def register_instance():
-    """Enregistre le service dans Eureka."""
-    instance = {
-        "instance": {
-            "instanceId": INSTANCE_ID,
-            "hostName": HOSTNAME,
-            "app": APP_NAME,
-            "ipAddr": get_host_ip(),
-=======
 # -------------------------
 # Configuration du service
 # -------------------------
@@ -60,7 +39,6 @@ def register_instance():
             "hostName": HOST_IP,
             "app": APP_NAME.upper(),
             "ipAddr": HOST_IP,
->>>>>>> f0a07458c995d729dc46805bba688301d7abfe2b
             "vipAddress": APP_NAME,
             "status": "UP",
             "port": {"$": INSTANCE_PORT, "@enabled": "true"},
@@ -87,11 +65,7 @@ def register_instance():
         print("❌ [Eureka] Erreur de connexion :", e)
 
 def renew_registration():
-<<<<<<< HEAD
-    """Envoie un battement de cœur (heartbeat) pour garder l’inscription active."""
-=======
     """Envoie un heartbeat pour garder l'inscription active."""
->>>>>>> f0a07458c995d729dc46805bba688301d7abfe2b
     url = f"{EUREKA_SERVER}/{APP_NAME}/{INSTANCE_ID}"
     try:
         response = requests.put(url)
@@ -103,11 +77,7 @@ def renew_registration():
         print("⚠️ [Eureka] Heartbeat échoué :", e)
 
 def unregister_instance():
-<<<<<<< HEAD
-    """Supprime l’inscription du service à l’arrêt du serveur."""
-=======
     """Désinscrit le service à l'arrêt du serveur."""
->>>>>>> f0a07458c995d729dc46805bba688301d7abfe2b
     url = f"{EUREKA_SERVER}/{APP_NAME}/{INSTANCE_ID}"
     try:
         response = requests.delete(url)
@@ -118,27 +88,16 @@ def unregister_instance():
     except Exception as e:
         print("⚠️ [Eureka] Erreur de désinscription :", e)
 
-<<<<<<< HEAD
-def start_eureka_registration():
-    """Lance le processus d’enregistrement et de renouvellement périodique."""
-=======
 # -------------------------
 # Thread pour heartbeat
 # -------------------------
 def start_eureka_registration():
->>>>>>> f0a07458c995d729dc46805bba688301d7abfe2b
     register_instance()
     atexit.register(unregister_instance)
 
     def keep_alive():
         while True:
             renew_registration()
-<<<<<<< HEAD
-            time.sleep(30)  # heartbeat toutes les 30 secondes
-
-    thread = threading.Thread(target=keep_alive, daemon=True)
-    thread.start()
-=======
             time.sleep(30)  # toutes les 30 secondes
 
     thread = threading.Thread(target=keep_alive, daemon=True)
@@ -151,4 +110,3 @@ if __name__ == "__main__":
     start_eureka_registration()
     # Ici tu peux démarrer ton serveur Django normalement
     # Exemple : python manage.py runserver 0.0.0.0:8000
->>>>>>> f0a07458c995d729dc46805bba688301d7abfe2b

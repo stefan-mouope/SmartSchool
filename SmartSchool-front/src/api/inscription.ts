@@ -35,13 +35,13 @@ export interface InscriptionResult {
 
 // ➕ Créer une nouvelle inscription
 export const createInscription = async (payload: InscriptionPayload): Promise<InscriptionResult> => {
-  const res = await api.post<InscriptionResult>("http://localhost:5000/api/inscriptions", payload);
+  const res = await api.post<InscriptionResult>("/inscriptions", payload);
   return res.data;
 };
 
 // 📄 Récupérer toutes les inscriptions
 export const getAllInscriptions = async (): Promise<InscriptionResult[]> => {
-  const res = await api.get<InscriptionResult[]>("http://localhost:5000/api/inscriptions");
+  const res = await api.get<InscriptionResult[]>("/inscriptions");
   return res.data;
 };
 

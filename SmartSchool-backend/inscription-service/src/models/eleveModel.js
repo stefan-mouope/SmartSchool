@@ -1,5 +1,6 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/db.js";
+import { v4 as uuidv4 } from "uuid";
 
 const Student = sequelize.define("Student", {
   id: {
@@ -9,8 +10,9 @@ const Student = sequelize.define("Student", {
   },
   matricule: {
     type: DataTypes.STRING,
-    allowNull: true,
+    allowNull: false,
     unique: true,
+    defaultValue: () => `STD-${uuidv4().slice(0, 8)}`,
   },
   last_name: {
     type: DataTypes.STRING,
@@ -43,15 +45,6 @@ const Student = sequelize.define("Student", {
 }, {
   tableName: "Student",
   timestamps: false,
-});
-
-// 🔹 Génération automatique du matricule
-Student.beforeCreate(async (student, options) => {
-  if (!student.matricule) {
-    const year = new Date().getFullYear();
-    const count = await Student.count() + 1;
-    student.matricule = `STD${year}-${count.toString().padStart(3, '0')}`;
-  }
 });
 
 export default Student;
