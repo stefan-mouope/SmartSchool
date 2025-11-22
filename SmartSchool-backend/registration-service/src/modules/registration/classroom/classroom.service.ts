@@ -41,17 +41,22 @@ export class ClassRoomService {
   }
 
   // Récupérer les classes par école
-  async findBySchool(schoolId: number) {
-    try {
-      const classrooms = await ClassRoom.findAll({
-        where: { school_id: schoolId },
-        include: [{ model: School, as: "school" }],
-      });
-      return classrooms;
-    } catch (error) {
-      throw error;
-    }
+ async findBySchool(schoolId: number) {
+  try {
+    const classrooms = await ClassRoom.findAll({
+      where: { school_id: schoolId },
+      include: [
+        {
+          model: School,
+          as: "school_for_classroom", // <-- alias correct
+        },
+      ],
+    });
+    return classrooms;
+  } catch (error) {
+    throw error;
   }
+}
 
   // Récupérer les classes par niveau
   async findByLevel(level: string) {

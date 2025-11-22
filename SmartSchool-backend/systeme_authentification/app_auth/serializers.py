@@ -20,8 +20,9 @@ class RegisterSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         password = validated_data.pop('password')
 
-        if validated_data.get("role") != "superuser":
-            validated_data['registrie_id'] = validated_data.get('id')
+        # if validated_data.get("role") != "superuser":
+        #     print('validate data',validated_data)
+        #     validated_data['registrie_id'] = validated_data.get('registrie_id')
 
         user = User.objects.create_user(**validated_data)
         user.set_password(password)

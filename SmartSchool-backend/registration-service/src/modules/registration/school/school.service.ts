@@ -1,7 +1,7 @@
 import { School } from "./school.model";
 import { ClassRoom } from "../classroom/classroom.model";
 import { Transaction } from "sequelize";
-import { Matter } from "../models";
+import { AcademicYear, Matter } from "../models";
 import sequelize from "../../../config/database"; 
 
 export class SchoolService {
@@ -15,42 +15,66 @@ export class SchoolService {
     "EPS",
   ];
 
-  // Créer une école
+  // ➤ Créer une année scolaire en cours AUTOMATIQUEMENT
+  private generateCurrentAcademicYear() {
+    const currentYear = new Date().getFullYear();
+
+    return {
+      start_date: new Date(currentYear, 8, 1),  // 1er septembre
+      end_date: new Date(currentYear + 1, 6, 30), // 30 juin
+    };
+  }
+
+  // ➤ Créer une école + classes + matières + année scolaire
   async create(data: any) {
     const transaction: Transaction = await sequelize.transaction();
+
     try {
-      //  On inclut la création de l’école dans la transaction
+      // 1) Création de l'école
       const school = await School.create(data, { transaction });
 
+      // 2) Création des classes
       const classrooms = this.defaultClasses.map((name) => ({
         name,
         school_id: school.id,
       }));
-
       await ClassRoom.bulkCreate(classrooms, { transaction });
 
+      // 3) Création des matières
       const matters = this.defaultMatters.map((name) => ({
         name,
         school_id: school.id,
       }));
-
       await Matter.bulkCreate(matters, { transaction });
 
+      // 4) Création automatique de l'année scolaire actuelle
+      const currentYearData = this.generateCurrentAcademicYear();
+      await AcademicYear.create(
+        {
+          ...currentYearData,
+          school_id: school.id,
+        },
+        { transaction }
+      );
+
+      // 5) Valider la transaction
       await transaction.commit();
 
-      // Retourne l’école avec ses classes et matières associées
+      // 6) Retourner l’école avec relations
       return await School.findByPk(school.id, {
         include: [
           { model: ClassRoom, as: "classrooms" },
           { model: Matter, as: "matters" },
+          { model: AcademicYear, as: "academic_years" },
         ],
       });
     } catch (error: any) {
-      // await transaction.rollback();
+      await transaction.rollback();
       console.error("Erreur lors de la création de l'école :", error);
-      throw new Error(error.message || "Erreur de création");
+      throw new Error(error.message || "Erreur lors de la création de l'école");
     }
   }
+
 
   // Récupérer toutes les écoles
   async findAll() {
