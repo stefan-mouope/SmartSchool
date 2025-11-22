@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
-import { jwtDecode } from "jwt-decode";
+import  jwtDecode  from "jwt-decode";
 
 import { 
   loginRequest, 
