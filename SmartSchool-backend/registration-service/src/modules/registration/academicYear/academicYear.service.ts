@@ -38,20 +38,27 @@ export class AcademicYearService {
   }
 
   // Récupérer l'année académique actuelle
-  async findCurrent() {
-    try {
-      const today = new Date();
-      const academicYear = await AcademicYear.findOne({
-        where: {
-          start_date: { [Op.lte]: today },
-          end_date: { [Op.gte]: today },
-        },
-      });
-      return academicYear;
-    } catch (error) {
-      throw error;
-    }
+// Récupérer l'année académique actuelle d'une école donnée
+async findCurrent(schoolId: number) {
+  try {
+    const today = new Date();
+
+    const academicYear = await AcademicYear.findOne({
+      where: {
+        school_id: schoolId,
+        start_date: { [Op.lte]: today },
+        end_date: { [Op.gte]: today },
+      },
+    });
+
+    return academicYear;
+  } catch (error) {
+    throw error;
   }
+}
+
+
+  
 
   // Mettre à jour une année académique
   async update(id: number, data: any) {

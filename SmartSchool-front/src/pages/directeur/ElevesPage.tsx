@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Plus } from "lucide-react";
 import { DataTable } from "@/components/shared/DataTable";
 import { createInscription, getAllInscriptions, InscriptionResult } from "@/api/inscription";
+import { useAuthStore } from "@/store/authStore";
+import { getClassroomsBySchool } from "@/api/registration-service/classroom.api";
 
 interface StudentTable {
   id: number;
@@ -13,6 +15,11 @@ interface StudentTable {
 }
 
 export const ElevesPage: React.FC = () => {
+
+  const schoolId = useAuthStore((state) => state.school_id);
+  const academieYear_id = useAuthStore((state) => state.academic_year_id);
+
+  const [classrooms, setClassrooms] = useState<any>([]);
   const [eleves, setEleves] = useState<StudentTable[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -22,26 +29,32 @@ export const ElevesPage: React.FC = () => {
     adress: "",
     sex: "",
     phone_parent: "",
-    school_id: "",
-    academieYear_id: "",
+    school_id: schoolId || "",
+    academieYear_id: academieYear_id || "",
     classRoom_id: "",
   });
+
+  const fetchClassRoom = async (schoolId:number) => {
+    const response = await getClassroomsBySchool(schoolId);
+    setClassrooms(response);
+    }
 
   // 🔹 Charger les inscriptions au montage
   useEffect(() => {
     fetchEleves();
+    fetchClassRoom(schoolId!);
   }, []);
 
   const fetchEleves = async () => {
     try {
       const res: InscriptionResult[] = await getAllInscriptions();
       const data = res.map((s) => ({
-        id: s.student.id,
-        matricule: s.student.matricule,
-        nom: `${s.student.last_name} ${s.student.first_name}`,
-        classe: "N/A", // adapter si tu as les infos de la classe
-        statut: "Non payé",
-        montant: "150 000 FCFA",
+        id: s.Student.id,
+        matricule: s.Student.matricule,
+        nom: `${s.Student.last_name} ${s.Student.first_name}`,
+        // classe: "N/A", // adapter si tu as les infos de la classe
+        // statut: "Non payé",
+        // montant: "150 000 FCFA",
       }));
       setEleves(data);
     } catch (error) {
@@ -74,9 +87,9 @@ export const ElevesPage: React.FC = () => {
 
       // Ajouter le nouvel élève au tableau
       const newEleve: StudentTable = {
-        id: res.student.id,
-        matricule: res.student.matricule,
-        nom: `${res.student.last_name} ${res.student.first_name}`,
+        id: res.Student.id,
+        matricule: res.Student.matricule,
+        nom: `${res.Student.last_name} ${res.Student.first_name}`,
         classe: "N/A",
         statut: "Non payé",
         montant: "150 000 FCFA",
@@ -103,22 +116,22 @@ export const ElevesPage: React.FC = () => {
   const columns = [
     { key: "matricule", label: "Matricule", align: "left" as const },
     { key: "nom", label: "Nom complet", align: "left" as const },
-    { key: "classe", label: "Classe", align: "left" as const },
-    {
-      key: "statut",
-      label: "Statut paiement",
-      align: "center" as const,
-      render: (value: string) => (
-        <span
-          className={`px-3 py-1 rounded-full text-xs font-medium ${
-            value === "Payé" ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
-          }`}
-        >
-          {value}
-        </span>
-      ),
-    },
-    { key: "montant", label: "Montant", align: "right" as const },
+    // { key: "classe", label: "Classe", align: "left" as const },
+    // {
+    //   key: "statut",
+    //   label: "Statut paiement",
+    //   align: "center" as const,
+    //   render: (value: string) => (
+    //     <span
+    //       className={`px-3 py-1 rounded-full text-xs font-medium ${
+    //         value === "Payé" ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
+    //       }`}
+    //     >
+    //       {value}
+    //     </span>
+    //   ),
+    // },
+    // { key: "montant", label: "Montant", align: "right" as const },
   ];
 
   return (
@@ -199,33 +212,20 @@ export const ElevesPage: React.FC = () => {
               onChange={handleChange}
               className="w-full border px-3 py-2 rounded"
             />
-            <input
-              type="number"
-              name="school_id"
-              placeholder="ID école"
-              value={formData.school_id}
-              onChange={handleChange}
-              required
-              className="w-full border px-3 py-2 rounded"
-            />
-            <input
-              type="number"
-              name="academieYear_id"
-              placeholder="Année académique"
-              value={formData.academieYear_id}
-              onChange={handleChange}
-              required
-              className="w-full border px-3 py-2 rounded"
-            />
-            <input
-              type="number"
+        
+           
+            <select
               name="classRoom_id"
-              placeholder="Classe"
               value={formData.classRoom_id}
               onChange={handleChange}
-              required
               className="w-full border px-3 py-2 rounded"
-            />
+            >
+              {classrooms.map((classroom: any) => (
+                <option key={classroom.id} value={classroom.id}>
+                  {classroom.name}
+                </option>
+              ))}
+            </select>
 
             <div className="flex justify-end space-x-2">
               <button

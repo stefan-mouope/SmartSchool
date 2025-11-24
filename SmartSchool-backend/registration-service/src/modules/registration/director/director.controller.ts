@@ -5,46 +5,70 @@ const directorService = new DirectorService();
 
 export class DirectorController {
   // Créer un directeur
-  async create(req: Request, res: Response) {
+    async create(req: Request, res: Response) {
+    let directorCreated = null;
+
     try {
-      // Générer automatiquement le username : prenom.nom en minuscules
+      // Générer automatiquement le username
       const username = `${req.body.first_name.toLowerCase()}.${req.body.last_name.toLowerCase()}`;
 
-      // Préparer le payload pour Django
+      
+
+      // 1) Créer d'abord le directeur dans ta base Node
+      directorCreated = await directorService.create({
+        ...req.body,
+        username: username,
+      });
+// Payload envoyé au microservice Django
       const payload = {
         ...req.body,
         role: "directeur",
-        username: username
+        username: username,
+        registrie_id:directorCreated ? directorCreated.id : undefined,
       };
+      console.log("📌 Directeur créé côté Node :", directorCreated);
 
-      // 1) Publier l'événement RPC et attendre la réponse Django
+      // 2) Envoyer l’évènement RPC à Django (création du compte utilisateur)
       const rpcResponse = await publishDynamiqueEvent(
         "registration_events",
         payload,
-        "registration.create.director" // routing key conforme
+        "registration.create.director"
       );
 
       console.log("📥 Réponse RPC Django :", rpcResponse);
 
+      // 3) Si Django renvoie une erreur, rollback (supprimer le directeur Node)
       if (!rpcResponse.success) {
-        return res.status(400).json({ error: rpcResponse.error });
+        console.log("❌ Django a échoué → suppression du directeur Node");
+
+        await directorService.delete(directorCreated.id);
+
+        return res.status(400).json({
+          success: false,
+          error: rpcResponse.error,
+        });
       }
 
-      // 2) Si Django OK → créer le directeur dans ta base Node
-      const director = await directorService.create(req.body);
-
+      // 4) Tout est OK → renvoyer la réponse réussie
       return res.status(201).json({
         success: true,
         message: "Directeur créé avec succès",
-        account: rpcResponse.user, // info renvoyée par Django
-        director_service: director, // info du microservice Node
+        account: rpcResponse.user,      // informations du compte Django
+        director: directorCreated,      // données du directeur Node
       });
 
     } catch (error: any) {
       console.error("❌ Erreur controller create_director:", error);
+
+      // Rollback en cas d’exception
+      if (directorCreated) {
+        await directorService.delete(directorCreated.id);
+      }
+
       return res.status(500).json({ error: error.message });
     }
   }
+
 
 
   // Récupérer tous les directeurs

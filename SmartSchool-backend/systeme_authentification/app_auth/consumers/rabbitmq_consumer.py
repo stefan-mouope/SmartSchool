@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 # 🔥 ACTIONS AUTORISÉES PAR RÔLE
 # -----------------------------
 ALLOWED_ACTIONS = {
-    "superuser": ["create_ecole", "create_director"],
+    "superuser": ["create_ecole", "create_director", "create_academicYear"],
     "directeur": [
         "create_eleve", "delete_eleve", "create_inscription",
         "create_teacher", "create_classroom", "create_matter",
@@ -207,7 +207,7 @@ class RabbitMQRegistrationConsumer(threading.Thread):
 
         def callback(ch, method, properties, body):
             payload = json.loads(body)
-
+            print(payload)
             try:
                 with transaction.atomic():
                     serializer = RegisterSerializer(data=payload)

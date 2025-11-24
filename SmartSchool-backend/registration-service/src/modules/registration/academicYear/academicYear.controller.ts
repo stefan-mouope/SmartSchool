@@ -36,14 +36,21 @@ export class AcademicYearController {
   }
 
   // Récupérer l'année académique actuelle
-  async findCurrent(req: Request, res: Response) {
-    try {
-      const academicYear = await academicYearService.findCurrent();
-      res.status(200).json(academicYear);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
+async findCurrent(req: Request, res: Response) {
+  try {
+    const schoolId = Number(req.params.schoolId);
+    console.log('Received schoolId:', schoolId);
+    if (!schoolId) {
+      return res.status(400).json({ error: "schoolId est requis" });
     }
+
+    const academicYear = await academicYearService.findCurrent(schoolId);
+    res.status(200).json(academicYear);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
   }
+}
+
 
   // Mettre à jour une année académique
   async update(req: Request, res: Response) {
