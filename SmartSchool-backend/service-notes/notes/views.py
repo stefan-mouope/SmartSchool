@@ -10,7 +10,7 @@ from .rabbitmq_auth import verify_rabbitmq_action
 
 from django.utils.decorators import method_decorator
 
-@method_decorator(verify_rabbitmq_action("create_note"), name='post')
+# @method_decorator(verify_rabbitmq_action("create_note"), name='post')
 class CreateNote(APIView):
 
     def post(self, request, id_inscription, id_matiere):

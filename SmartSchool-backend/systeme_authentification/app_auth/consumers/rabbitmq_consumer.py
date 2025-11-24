@@ -30,7 +30,7 @@ ALLOWED_ACTIONS = {
         "create_teacher", "create_classroom", "create_matter",
         "create_academicYear"
     ],
-    "enseignant": ["create_note", "update_note", "view_notes",'create_inscription'],
+    # "enseignant": ["create_note", "update_note", "view_notes",'create_inscription'],
     "caissier": ["view_paiements"],
     "secretaire": ["view_eleves"]
 }

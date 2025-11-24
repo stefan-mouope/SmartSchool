@@ -29,6 +29,7 @@ export const startVerifyInscriptionConsumer = async () => {
           );
         }
 
+      // channel.ack(msg);
       } catch (err) {
         const errorResponse = { status: false, error: err.message };
 
@@ -40,6 +41,7 @@ export const startVerifyInscriptionConsumer = async () => {
           );
         }
       }
+      // channel.ack(msg);
     }
   );
 };

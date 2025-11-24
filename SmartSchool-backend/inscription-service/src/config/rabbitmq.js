@@ -1,6 +1,6 @@
 // rabbitmq.js
 import amqp from "amqplib";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "node:crypto";
 
 let channel = null;
 let replyQueue = null;
@@ -61,7 +61,7 @@ export const connectRabbitMQ = async () => {
 export const publishEvent = async (event, routingKey = "inscription.request") => {
   if (!channel) throw new Error("❌ RabbitMQ non initialisé");
 
-  const correlationId = uuidv4();
+  const correlationId = randomUUID();
 
   const promise = new Promise((resolve, reject) => {
     pendingResponses.set(correlationId, { resolve, reject });
@@ -99,10 +99,10 @@ export const consumeEvent = async (routingKey, queueName, callback) => {
     try {
       const content = JSON.parse(msg.content.toString());
       await callback(content, msg, channel);
-      channel.ack(msg);
+      // channel.ack(msg);
     } catch (err) {
       console.error("❌ Erreur consumer :", err);
-      channel.nack(msg, false, false); // on rejette le msg
+      // channel.nack(msg, false, false); // on rejette le msg
     }
   });
 };

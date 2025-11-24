@@ -19,12 +19,7 @@ SECRET_KEY = 'django-insecure-1mdh90siwm@ws*e^g&t=f6wdp#3a*d#600vi&1+)*gscvvs_b_
 DEBUG = True
 
 # Hosts
-ALLOWED_HOSTS = [
-    "localhost",
-    "127.0.0.1",
-    "192.168.0.104",  # ton IP LAN
-    "*",               # DEV ONLY
-]
+ALLOWED_HOSTS = ["*"]
 
 # Application definition
 INSTALLED_APPS = [
@@ -38,11 +33,11 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
-    'corsheaders',
+    # 'corsheaders',
 ]
 
 MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware",  # doit être tout en haut
+    # "corsheaders.middleware.CorsMiddleware",  # doit être tout en haut
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
