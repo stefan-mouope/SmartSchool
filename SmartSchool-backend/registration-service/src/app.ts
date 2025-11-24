@@ -6,8 +6,8 @@ import morgan from "morgan";
 const app: Application = express();
 
 const allowedOrigins = [
-  "http://localhost:8082",
-  "http://192.168.0.104:8082",
+  "http://localhost:8083",
+  "http://192.168.0.104:8083",
   "http://localhost:3000",
   "http://192.168.0.104:3000",
 ];
@@ -71,5 +71,9 @@ app.use((req: Request, res: Response) => {
   });
 });
 
+app.use(cors({
+  origin: "http://localhost:8083",  // port de ton React front(Vite = 8083)
+  credentials: true                 // indispensable pour les cookies/sessions
+}));
 export default app;
 
