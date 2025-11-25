@@ -49,7 +49,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-        "corsheaders.middleware.CorsMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -123,10 +123,10 @@ USE_TZ = True
 
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:8081",
-    "http://127.0.0.1:8081",
+    "http://localhost:8083",   # le FRONTEND ACTUEL
+    "http://127.0.0.1:8083",
+    "http://localhost:3000",   # au cas où on testes avec Postman
 ]
-
 CORS_ALLOW_CREDENTIALS = True
 
 
@@ -137,7 +137,7 @@ ALLOWED_HOSTS = [
     "192.168.0.*",          # ou même tout le réseau local
     "*",                    # ← EN DEV UNIQUEMENT (retrait en prod)
 ]
-
+CORS_ALLOW_CREDENTIALS = True
 # OU encore plus propre en 2025 (recommandé)
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "*").split(",")
 

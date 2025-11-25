@@ -7,7 +7,16 @@ import { componentTagger } from "lovable-tagger";
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
-    port: 8080,
+    port: 8083, // ← tu as dit que ton front tourne sur 8083
+    proxy: {
+      // TOUTES les requêtes qui commencent par /api seront redirigées vers ton backend
+      "/api": {
+        target: "http://localhost:3000",  // ← ton backend Node.js
+        changeOrigin: true,
+        secure: false,
+        // rewrite: (path) => path.replace(/^\/api/, ''), // au cas où ton backend attend sans /api
+      },
+    },
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
