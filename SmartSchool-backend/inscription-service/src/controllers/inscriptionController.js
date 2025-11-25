@@ -123,4 +123,31 @@ export const deleteInscription = async (req, res) => {
   }
 };
 
+// inscriptionController.js
+export const getInscriptionsByClass = async (req, res) => {
+  try {
+    const { classId } = req.params;
+    const { current_year } = req.query;
 
+    // Si tu veux seulement l'année courante
+    let query = `
+      SELECT i.*, s.matricule, s.first_name, s.last_name 
+      FROM Inscription i
+      JOIN Student s ON i.student_id = s.id
+      WHERE i.classRoom_id = ?
+    `;
+
+    const params = [classId];
+
+    if (current_year === "true") {
+      query += ` AND i.academieYear_id = (SELECT id FROM Annee_scolaire WHERE actuelle = 1 LIMIT 1)`;
+    }
+
+    const [rows] = await db.query(query, params);
+
+    return res.json(rows);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Erreur serveur" });
+  }
+};

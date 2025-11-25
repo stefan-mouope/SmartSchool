@@ -16,7 +16,7 @@ interface Eleve {
 }
 
 const INSCRIPTION_URL = "http://localhost:8002";
-const NOTES_URL = "http://localhost:8001";
+const NOTES_URL = "http://localhost:8000";
 
 export const NotesPage: React.FC = () => {
   const [classeId, setClasseId] = useState("");
