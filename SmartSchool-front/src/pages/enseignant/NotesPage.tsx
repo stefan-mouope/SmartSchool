@@ -4,7 +4,9 @@ import { Upload, Download } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { getAppreciation, getAppreciationColor } from '@/utils/calculations';
-import { api, BASE_INSCRIPTION_SERVICE, BASE_REGISTRATION } from '@/api/axios';
+import { api, BASE_INSCRIPTION_SERVICE, BASE_REGISTRATION} from '@/api/axios';
+import { updateNote, type NotePayload } from '@/api/noteService';
+
 
 type Note = {
   id: number;
@@ -215,20 +217,84 @@ useEffect(() => {
 
   fetchStudents();
 }, [selectedYear, selectedClass, selectedMatiere, selectedPeriod]);
-  // Gestion saisie
-  const handleNoteChange = (id: number, field: 'note' | 'interrogation', value: string) => {
-    setNotes(prev => prev.map(n => {
-      if (n.id === id) {
-        const updated = { ...n, [field]: value };
-        if (field === 'note' && value) {
-          const num = parseFloat(value);
-          updated.appreciation = !isNaN(num) ? getAppreciation(num) : '';
-        }
-        return updated;
-      }
-      return n;
-    }));
-  };
+
+
+
+
+
+
+
+const [savingCells, setSavingCells] = useState<Set<string>>(new Set());
+
+const handleNoteChange = async (
+  inscriptionId: number,
+  field: 'note' | 'interrogation',
+  value: string
+) => {
+  if (!selectedMatiere) return;
+
+  const numericValue = value === '' ? null : parseFloat(value);
+  if (value !== '' && (isNaN(numericValue!) || numericValue! < 0 || numericValue! > 20)) {
+    return; // Optionnel : tu peux afficher un toast d'erreur
+  }
+
+  // Mise à jour optimiste de l'UI
+  setNotes(prev =>
+    prev.map(n =>
+      n.id === inscriptionId
+        ? {
+            ...n,
+            [field]: value,
+            appreciation: value ? getAppreciation(parseFloat(value)) : '',
+          }
+        : n
+    )
+  );
+
+  const cellKey = `${inscriptionId}-${selectedPeriod}`;
+  setSavingCells(prev => new Set(prev).add(cellKey));
+
+  // Préparer les données à envoyer selon la période
+  let payload: Partial<NotePayload> = {};
+
+  if (selectedPeriod.startsWith('sequence')) {
+    payload[selectedPeriod as keyof NotePayload] = numericValue;
+  } else if (selectedPeriod.startsWith('trimestre')) {
+    // Si tu veux permettre la saisie manuelle des trimestres (rarement le cas)
+    payload[selectedPeriod as keyof NotePayload] = numericValue;
+  }
+
+  const result = await updateNote(inscriptionId, selectedMatiere, payload);
+
+  // Retirer le loader
+  setSavingCells(prev => {
+    const next = new Set(prev);
+    next.delete(cellKey);
+    return next;
+  });
+
+  // Optionnel : rollback en cas d'échec
+  if (!result.success) {
+    // Remettre l'ancienne valeur (tu peux stocker l'ancienne avant)
+    setNotes(prev =>
+      prev.map(n =>
+        n.id === inscriptionId
+          ? {
+              ...n,
+              [field]: '', // ou valeur précédente
+              appreciation: '',
+            }
+          : n
+      )
+    );
+
+    // Tu peux ajouter un toast ici
+    alert(result.message || "Erreur lors de la sauvegarde");
+  }
+};
+
+
+
 
   const calculerMoyenneClasse = (field: 'note' | 'interrogation') => {
     const vals = notes.map(n => parseFloat(n[field] || '0')).filter(v => v > 0);
@@ -367,7 +433,7 @@ useEffect(() => {
                     <td className="border px-4 py-3 text-center font-medium bg-muted/20">{i + 1}</td>
                     <td className="border px-4 py-3 font-mono text-xs bg-muted/20">{eleve.matricule}</td>
                     <td className="border px-6 py-3 font-medium">{eleve.nom}</td>
-                    <td className="border p-0">
+                    <td className="border p-0 relative">
                       <Input
                         type="number"
                         min="0"
@@ -375,9 +441,14 @@ useEffect(() => {
                         step="0.25"
                         value={eleve.note}
                         onChange={(e) => handleNoteChange(eleve.id, 'note', e.target.value)}
-                        className="w-full h-12 text-center border-none rounded-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full h-12 text-center border-none rounded-none focus:ring-2 focus:ring-blue-500 pr-10"
                         placeholder="--"
                       />
+                      {savingCells.has(`${eleve.id}-${selectedPeriod}`) && (
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                          <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                      )}
                     </td>
                     <td className={`border px-6 py-3 text-center font-bold ${eleve.appreciation ? getAppreciationColor(eleve.appreciation) : 'bg-muted/20'}`}>
                       {eleve.appreciation || '--'}
