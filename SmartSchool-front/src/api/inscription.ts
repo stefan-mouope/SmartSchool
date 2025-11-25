@@ -1,5 +1,5 @@
 import { api } from "./axios";
-import { BASE_ISCRIPTION_SERVICE } from "./axios";
+import { BASE_INSCRIPTION_SERVICE } from "./axios";
 
 
 export interface StudentData {
@@ -48,20 +48,20 @@ export interface InscriptionResult {
 
 // ➕ Créer une nouvelle inscription
 export const createInscription = async (payload: InscriptionPayload): Promise<InscriptionResult> => {
-  const res = await api.post<InscriptionResult>(`${BASE_ISCRIPTION_SERVICE}/api/inscriptions`, payload);
+  const res = await api.post<InscriptionResult>(`${BASE_INSCRIPTION_SERVICE}/api/inscriptions`, payload);
   return res.data;
 };
 
 // 📄 Récupérer toutes les inscriptions
 export const getAllInscriptions = async (): Promise<InscriptionResult[]> => {
-  const res = await api.get<InscriptionResult[]>(`${BASE_ISCRIPTION_SERVICE}/api/inscriptions`);
+  const res = await api.get<InscriptionResult[]>(`${BASE_INSCRIPTION_SERVICE}/api/inscriptions`);
   console.log(res.data)
   return res.data;
 };
 
 // 🔍 Récupérer une inscription par ID
 export const getInscriptionById = async (id: number): Promise<InscriptionResult> => {
-  const res = await api.get<InscriptionResult>(`${BASE_ISCRIPTION_SERVICE}/api/inscriptions/${id}`);
+  const res = await api.get<InscriptionResult>(`${BASE_INSCRIPTION_SERVICE}/api/inscriptions/${id}`);
   return res.data;
 };
 

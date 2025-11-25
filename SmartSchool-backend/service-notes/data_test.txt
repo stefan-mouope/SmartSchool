@@ -31,7 +31,7 @@ GET http://localhost:8000/notes/inscription/1/
 
 Récupérer toutes les notes d’une matière
 
-GET http://localhost:8000/notes/matiere/101/
+GET http://localhost:8000/notes/matiere/1/
 
 
 Recuperer LES MOYENNES PAR inscription 

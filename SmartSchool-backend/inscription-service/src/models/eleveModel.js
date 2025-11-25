@@ -1,7 +1,6 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/db.js";
-import { v4 as uuidv4 } from "uuid";
-
+import { randomUUID } from "node:crypto";
 const Student = sequelize.define("Student", {
   id: {
     type: DataTypes.INTEGER,
@@ -12,7 +11,7 @@ const Student = sequelize.define("Student", {
     type: DataTypes.STRING,
     allowNull: false,
     unique: true,
-    defaultValue: () => `STD-${uuidv4().slice(0, 8)}`,
+    defaultValue: () => `STD-${randomUUID().slice(0, 8)}`,
   },
   last_name: {
     type: DataTypes.STRING,

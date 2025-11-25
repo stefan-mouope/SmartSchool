@@ -2,10 +2,11 @@
 import axios from "axios";
 
 
-export const BASE_REGISTRATION="REGISTRATION-SERVICE"
-export const BASE_NOTE_SERVICE="NOTE-SERVICE"
-export const BASE_AUTH_SERVICE="AUTH-SERVICE"
-export const BASE_ISCRIPTION_SERVICE="SERVICE-INSCRIPTION"
+// Remplace tes anciennes constantes par ÇA :
+export const BASE_REGISTRATION = "/registration-service"
+export const BASE_NOTE_SERVICE = "/note-service"
+export const BASE_AUTH_SERVICE = "/auth-service"
+export const BASE_INSCRIPTION_SERVICE = "/inscription-service"
 
 // Base URL: set VITE_API_BASE_URL in .env, default to Django local
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8081";

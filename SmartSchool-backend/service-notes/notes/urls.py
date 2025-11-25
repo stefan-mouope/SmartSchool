@@ -4,6 +4,7 @@ from .views import (
     UpdateNote,
     NotesByInscription,
     NotesByMatiere,
+    FullNotesByInscription
 )
 from .views import moyennes_par_inscription
 
@@ -19,5 +20,10 @@ urlpatterns = [
 
     # GET by matiere
     path("matiere/<int:id_matiere>/", NotesByMatiere.as_view()),
-    path("moyennes/<int:id_inscription>/", moyennes_par_inscription)
+
+    # Moyennes
+    path("moyennes/<int:id_inscription>/", moyennes_par_inscription),
+
+    # ✅ GET full notes par classe et année
+    path("full/<id_inscription>/", FullNotesByInscription.as_view()),
 ]

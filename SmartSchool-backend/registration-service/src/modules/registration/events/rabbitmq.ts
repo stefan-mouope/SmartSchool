@@ -127,10 +127,10 @@ export const consumeEvent = async (
       try {
         const event = JSON.parse(msg.content.toString());
         await handler(event, msg, ch);
-        ch.ack(msg);
+        // ch.ack(msg);
       } catch (err) {
         console.error("Erreur dans le consumer:", err);
-        ch.nack(msg, false, false);
+        // ch.nack(msg, false, false);
       }
     },
     { noAck: false }
