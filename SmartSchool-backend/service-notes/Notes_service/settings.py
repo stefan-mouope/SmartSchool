@@ -49,7 +49,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-        "corsheaders.middleware.CorsMiddleware",
+        # "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -127,9 +127,15 @@ USE_TZ = True
 #     "http://127.0.0.1:8081",
 # ]
 
+<<<<<<< HEAD
 # CORS_ALLOW_CREDENTIALS = True
 
 
+=======
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = []
+CORS_ALLOW_CREDENTIALS = False
+>>>>>>> origin/mouope
 # ALLOWED_HOSTS = [
 #     "localhost",
 #     "127.0.0.1",

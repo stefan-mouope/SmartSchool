@@ -1,5 +1,6 @@
 import { publishEvent } from "../config/rabbitmq.js";
 import { Student, Inscription, Tranche, Payer } from "../models/associations.js";
+import axios from "axios";
 
 // ➕ Créer une nouvelle inscription
 export const createInscription = async (req, res) => {
@@ -123,4 +124,102 @@ export const deleteInscription = async (req, res) => {
   }
 };
 
+// 📌 Récupérer les élèves d'une classe pour une année scolaire donnée
+export const getStudentsByClassAndYear = async (req, res) => {
+  try {
+    const { classRoom_id, academieYear_id } = req.params;
 
+    if (!classRoom_id || !academieYear_id) {
+      return res.status(400).json({ message: "Paramètres manquants" });
+    }
+
+    const inscriptions = await Inscription.findAll({
+      where: {
+        classRoom_id,
+        academieYear_id
+      },
+      include: [
+        {
+          model: Student,
+          attributes: [
+            "id",
+            "matricule",
+            "last_name",
+            "first_name",
+            "birth_date",
+            "adress",
+            "sex",
+            "phone_parent"
+          ]
+        }
+      ]
+    });
+
+    // 🔥 Ajouter l'id de l'inscription dans la réponse
+    const result = inscriptions.map(i => ({
+      inscription_id: i.id,
+      ...i.Student.dataValues
+    }));
+
+    return res.json({
+      status: true,
+      count: result.length,
+      students: result
+    });
+
+  } catch (error) {
+    console.error("Erreur récupération élèves classe/année :", error);
+    return res.status(500).json({ message: "Erreur serveur", error: error.message });
+  }
+};
+
+
+export const getStudentsWithNotes = async (req, res) => {
+  try {
+    const { classRoom_id, academieYear_id } = req.params;
+
+    const inscriptions = await Inscription.findAll({
+      where: { classRoom_id, academieYear_id },
+      include: [{ model: Student }]
+    });
+
+    const result = [];
+
+    for (const ins of inscriptions) {
+      const student = ins.Student;
+
+    const notesResponse = await axios.get(
+      `http://localhost:8081/note-service/notes/full/${ins.id}/`,
+      { timeout: 5000 } // 5 secondes max
+    ).catch(err => ({ data: { notes: [] } }));
+
+
+      result.push({
+        inscription_id: ins.id,
+        student: {
+          id: student.id,
+          matricule: student.matricule,
+          last_name: student.last_name,
+          first_name: student.first_name,
+          birth_date: student.birth_date,
+          adress: student.adress,
+          sex: student.sex,
+          phone_parent: student.phone_parent
+        },
+        classRoom_id,
+        academieYear_id,
+        notes: notesResponse.data.notes   // 🔥 toutes les matières + notes
+      });
+    }
+
+    res.json({
+      status: true,
+      count: result.length,
+      data: result
+    });
+
+  } catch (error) {
+    console.error("Erreur récupération élèves+notes :", error);
+    res.status(500).json({ message: "Erreur serveur", error: error.message });
+  }
+};

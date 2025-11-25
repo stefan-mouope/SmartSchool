@@ -5,7 +5,6 @@ from django.db import models
 class Note(models.Model):
     id_inscription = models.IntegerField()
     id_matiere = models.IntegerField()
-    id_enseignant = models.IntegerField()
 
     # 6 séquences
     sequence1 = models.FloatField(null=True, blank=True)

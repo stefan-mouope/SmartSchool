@@ -11,8 +11,8 @@ import { EnseignantsPage } from '@/pages/directeur/EnseignantsPage';
 import { ElevesPage } from '@/pages/directeur/ElevesPage';
 import { PaiementsPage } from '@/pages/directeur/PaiementsPage';
 import { BulletinsPage } from '@/pages/directeur/BulletinsPage';
-import { EnseignantDashboard } from '@/pages/enseignant/EnseignantDashboard';
-import { NotesPage } from '@/pages/enseignant/NotesPage';
+import  EnseignantDashboard  from '@/pages/enseignant/EnseignantDashboard';
+import  { NotesPage } from '@/pages/enseignant/NotesPage';
 import { DirecteursPage } from './super/DirectorPage';
 
 const Index = () => {

@@ -6,7 +6,10 @@ const router = Router();
 const academicYearController = new AcademicYearController();
 
 // Routes CRUD pour AcademicYear
-router.post("/", verifyAuth('create_academicYear'),(req, res) => academicYearController.create(req, res));
+// router.post("/", verifyAuth('create_academicYear'),(req, res) => academicYearController.create(req, res));
+
+
+router.post("/", (req, res) => academicYearController.create(req, res));
 router.get("/", (req, res) => academicYearController.findAll(req, res));
 router.get("/current/:schoolId", (req, res) => academicYearController.findCurrent(req, res));
 router.get("/:id", (req, res) => academicYearController.findById(req, res));
