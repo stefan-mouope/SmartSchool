@@ -56,34 +56,35 @@ def get_refreshed_tokens(refresh_token_str: str) -> dict:
 
 
 
-# def publish_token_refreshed_event(user_id, new_access, new_refresh):
-#     connection = pika.BlockingConnection(
-#         pika.ConnectionParameters(
-#             host="rabbitmq",
-#             port=5672,
-#             credentials=pika.PlainCredentials("guest", "guest")
-#         )
-#     )
-#     channel = connection.channel()
+def publish_token_refreshed_event(user_id, new_access, new_refresh):
+    connection = pika.BlockingConnection(
+        pika.ConnectionParameters(
+            host="rabbitmq",
+            port=5672,
+            credentials=pika.PlainCredentials("guest", "guest")
+        )
+    )
+    channel = connection.channel()
 
-#     channel.exchange_declare(exchange="auth.events", exchange_type="topic", durable=False)
+    channel.exchange_declare(exchange="auth.events", exchange_type="topic", durable=False)
 
-#     event = {
-#         "event": "token.refreshed",
-#         "user_id": user_id,
-#         "access_token": new_access,
-#         "refresh_token": new_refresh
-#     }
+    event = {
+        "event": "token.refreshed",
+        "user_id": user_id,
+        "access_token": new_access,
+        "refresh_token": new_refresh
+    }
 
-#     channel.basic_publish(
-#         exchange="auth.events",
-#         routing_key="auth.token.refreshed",
-#         body=json.dumps(event)
-#     )
+    channel.basic_publish(
+        exchange="auth.events",
+        routing_key="auth.token.refreshed",
+        body=json.dumps(event)
+    )
 
-#     connection.close()
+    connection.close()
 
 def verify_and_refresh_token(access_token: str, refresh_token: str = None) -> dict:
+    print('111111111111111111111111111111111111111111111111111111111')
     try:
         # 🔍 Valider l'access token
         validated = jwt_auth.get_validated_token(access_token)
@@ -120,13 +121,13 @@ def verify_and_refresh_token(access_token: str, refresh_token: str = None) -> di
             user = jwt_auth.get_user(validated)
             payload = validated.payload
 
-            # print("✔ Tokens rafraîchis, publication de l'évènement token.refreshed")
+            print("✔ Tokens rafraîchis, publication de l'évènement token.refreshed")
 
-            # publish_token_refreshed_event(
-            #     user_id=payload.get("user_id"),
-            #     new_access=new_access,
-            #     new_refresh=new_refresh
-            # )
+            publish_token_refreshed_event(
+                user_id=payload.get("user_id"),
+                new_access=new_access,
+                new_refresh=new_refresh
+            )
 
             return {
                 "valid": True,

@@ -4,7 +4,7 @@ import { publishEvent } from "../rabbitmq";
 interface AuthResponse {
   valid: boolean;
   error?: string;
-  [key: string]: any; // Pour les données utilisateur additionnelles
+  [key: string]: any;
 }
 
 export const verifyAuth = (requiredAction: string) => {
@@ -16,15 +16,18 @@ export const verifyAuth = (requiredAction: string) => {
         return res.status(401).json({ message: "Token manquant" });
       }
 
-      const token = authHeader.split(" ")[1];
+      const accessToken = authHeader.split(" ")[1];
 
-      // 📡 Envoi de la demande de vérification au service d'auth Django
+      // Validation du refresh token optionnelle
+    
+
+      // 📡 Envoi au service Django Auth
       const response: AuthResponse = await publishEvent(
         {
-          token,
+          token: accessToken,
           action: requiredAction,
         },
-        "auth.verify" // routingKey vers Django Auth
+        "auth.verify"
       );
 
       console.log("🔐 Réponse Auth:", response);
@@ -33,9 +36,7 @@ export const verifyAuth = (requiredAction: string) => {
         return res.status(403).json({ message: response.error || "Accès refusé" });
       }
 
-      // 🔥 On attache l’utilisateur validé à req.user
-      (req as any).user = response; // Ou créer un type personnalisé pour req.user
-
+      (req as any).user = response;
       next();
     } catch (error: any) {
       console.error("Erreur middleware auth:", error);

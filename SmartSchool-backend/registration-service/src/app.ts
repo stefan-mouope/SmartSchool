@@ -1,7 +1,7 @@
 import express, { Application, Request, Response, NextFunction } from "express";
 import { registrationRoutes } from "./modules/registration";
 import { config } from "./config/env";
-import cors from "cors";
+// import cors from "cors";
 import morgan from "morgan";
 const app: Application = express();
 
@@ -12,7 +12,10 @@ const allowedOrigins = [
   "http://192.168.0.104:3000",
 ];
 app.use(morgan("dev"));
-
+// app.use(cors({
+//   origin: "http://localhost:8082",
+//   credentials: true
+// }));
 app.use((req, res, next) => {
   next(); // rien du tout
 });

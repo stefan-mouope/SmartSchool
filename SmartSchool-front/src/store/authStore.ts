@@ -32,6 +32,8 @@ interface AuthState {
   refreshToken: () => Promise<boolean>;
   loadSchool: (role: string, id: number) => Promise<void>;
   loadAcademicYear: (school_id: number) => Promise<void>;
+  updateFromEvent: (new_access: string, new_refresh: string) => void;
+
 }
 
 const handleGetMeRequest = (role: string, id: number) => {
@@ -126,7 +128,31 @@ export const useAuthStore = create<AuthState>()(
           } catch {
             set({ academic_year_id: null, start_date: null, end_date: null });
           }
-        }
+        },
+
+        // update evenment from socket
+        updateFromEvent: (new_access, new_refresh) => {
+          try {
+            const decoded: any = jwtDecode(new_access);
+
+            const user = {
+              user_id: decoded.user_id,
+              registrie_id: decoded.registrie_id,
+              email: decoded.email,
+              username: decoded.username,
+              role: decoded.role,
+            };
+
+            set({
+              access: new_access,
+              refresh: new_refresh,
+              user,
+            });
+          } catch (err) {
+            console.log("Erreur updateFromEvent:", err);
+          }
+        },
+
 
       }),
       { name: "auth-storage", version: 1 }

@@ -19,7 +19,6 @@ export const registerRequest = async (
  data:RegisterResult
 ): Promise<RegisterResult> => {
   const res = await api.post<RegisterResult>(`${BASE_AUTH_SERVICE}/api/auth/register/`,data );
-  console.log('rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr',res.data);
   return res.data
 };
 

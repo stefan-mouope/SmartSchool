@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import morgan from "morgan";
 import express from "express";
-import cors from "cors";
+// import cors from "cors";
 
 import eleveRoutes from "./routes/eleveRoutes.js";
 import trancheRoutes from "./routes/trancheRoutes.js";
