@@ -7,14 +7,11 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/auth/LoginPage";
 import SignupPage from "./pages/auth/SingupPage";
-import { useTokenSync } from "@/hooks/useTokenSync"; 
 
 const queryClient = new QueryClient();
 
 const App = () => {
 
-  useTokenSync();   
-        console.log("WebSocket connecté à ws://localhost:4001");
 
 
   return (

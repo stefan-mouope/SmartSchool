@@ -5,10 +5,8 @@
   "type": "module",
 
   "scripts": {
-    "dev": "concurrently \"npm run dev:vite\" \"npm run dev:ws\"",
+    "dev": "vite",
     "dev:vite": "vite",
-    "dev:ws": "node src/services/token-sync-service.ts",
-    
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
