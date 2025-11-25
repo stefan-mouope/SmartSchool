@@ -1,0 +1,60 @@
+spring:
+  main:
+    web-application-type: reactive
+
+  application:
+    name: proxy-service
+
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: false
+
+      routes:
+        - id: note-service
+          uri: http://localhost:8000
+          predicates:
+            - Path=/note-service/**
+          filters:
+            - StripPrefix=1
+
+        - id: auth-service
+          uri: http://localhost:8001
+          predicates:
+            - Path=/auth-service/**
+          filters:
+            - StripPrefix=1
+
+        - id: registration-service
+          uri: http://localhost:3000
+          predicates:
+            - Path=/registration-service/**
+          filters:
+            - StripPrefix=1
+
+        - id: inscription-service
+          uri: http://localhost:5000
+          predicates:
+            - Path=/inscription-service/**
+          filters:
+            - StripPrefix=1
+
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:5173"
+              - "http://127.0.0.1:5173"
+            allowedHeaders: "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+              - PATCH
+            allowCredentials: true
+
+server:
+  port: 8081

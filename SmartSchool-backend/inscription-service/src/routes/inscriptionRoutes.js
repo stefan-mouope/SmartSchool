@@ -4,8 +4,11 @@ import {
   getAllInscriptions,
   getInscriptionById,
   deleteInscription,
+  getStudentsWithNotes,
 } from "../controllers/inscriptionController.js";
 import { verifyAuth } from "../middlewares/verifyAuth.js";
+
+import { getStudentsByClassAndYear } from "../controllers/inscriptionController.js";
 
 
 const router = express.Router();
@@ -17,5 +20,14 @@ router.post("/", createInscription);
 router.get("/", getAllInscriptions);
 router.get("/:id", getInscriptionById);
 router.delete("/:id", deleteInscription);
+// router.get(
+//   "/class/:classRoom_id/year/:academieYear_id/students",
+//   getStudentsByClassAndYear
+// );
+
+router.get(
+  "/class/:classRoom_id/year/:academieYear_id/students",
+  getStudentsWithNotes
+);
 
 export default router;

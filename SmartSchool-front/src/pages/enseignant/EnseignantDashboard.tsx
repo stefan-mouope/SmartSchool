@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BookOpen, TrendingUp, Clock, Users, BarChart3, Award } from 'lucide-react';
-
+import {api, BASE_NOTE_SERVICE } from "@/api/axios";
 interface Note {
   id: number;
   id_inscription: number;
@@ -19,24 +19,19 @@ const EnseignantDashboard: React.FC = () => {
   const [idMatiere, setIdMatiere] = useState<number>(1);
   const [loading, setLoading] = useState(false);
 
-  const fetchRecentNotes = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(
-        `http://localhost:8000/notes/matiere/${idMatiere}/`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        // Trier par ID décroissant pour avoir les plus récents
-        const sorted = data.sort((a: Note, b: Note) => b.id - a.id);
-        setRecentNotes(sorted.slice(0, 10)); // 10 dernières notes
+    const fetchRecentNotes = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get<Note[]>(`${BASE_NOTE_SERVICE}/notes/matiere/${idMatiere}/`);
+        const sorted = response.data.sort((a, b) => b.id - a.id);
+        setRecentNotes(sorted.slice(0, 10));
+      } catch (err) {
+        console.error('Erreur lors du chargement des notes:', err);
+        setRecentNotes([]);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error('Erreur lors du chargement:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
   useEffect(() => {
     fetchRecentNotes();
@@ -194,9 +189,6 @@ const EnseignantDashboard: React.FC = () => {
                         <td className="px-6 py-4">
                           <div>
                             <p className="font-medium text-gray-900">Inscription #{note.id_inscription}</p>
-                            {note.id_enseignant && (
-                              <p className="text-sm text-gray-500">Enseignant #{note.id_enseignant}</p>
-                            )}
                           </div>
                         </td>
                         <td className="px-6 py-4 text-center">

@@ -58,3 +58,18 @@ export const getAllNotesByEleve = async (idInscription: number): Promise<NoteRes
   );
   return response.data;
 };
+
+export const getNotesByInscription = async (idInscription: number): Promise<NoteResponse[]> => {
+  try {
+    const response = await api.get<NoteResponse[]>(
+      `${BASE_NOTE_SERVICE}/notes/inscription/${idInscription}/`
+    );
+    return response.data;
+  } catch (error: any) {
+    if (error.response?.status === 404) {
+      return []; // Pas de notes
+    }
+    console.error("Erreur getNotesByInscription:", error);
+    throw new Error("Impossible de charger les notes de l'élève");
+  }
+};

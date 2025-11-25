@@ -1,333 +1,276 @@
 import React, { useState, useEffect } from 'react';
-import { Save, User, BookOpen, CheckCircle, AlertCircle } from 'lucide-react';
+import axios from 'axios';
+import { Upload, Download } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { getAppreciation, getAppreciationColor } from '@/utils/calculations';
+import { api, BASE_INSCRIPTION_SERVICE, BASE_NOTE_SERVICE } from '@/api/axios';
 
-interface Matiere {
+type Note = {
   id: number;
   nom: string;
-}
+  matricule: string;
+  note: string;
+  interrogation: string;
+  appreciation: string;
+};
 
-interface NoteData {
-  id_matiere: number;
-  sequence1: number | null;
-  sequence2: number | null;
-  sequence3: number | null;
-  sequence4: number | null;
-  sequence5: number | null;
-  sequence6: number | null;
-}
+export const NotesPage: React.FC = () => {
+  const [selectedCell, setSelectedCell] = useState<string | null>(null);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [loading, setLoading] = useState(true);
 
-const NotesPage: React.FC = () => {
-  const [nomEleve, setNomEleve] = useState('Tamo');
-  const [idInscription, setIdInscription] = useState<number>(1);
-  const [trimestreActif, setTrimestreActif] = useState<1 | 2 | 3>(1);
-  const [matieres, setMatieres] = useState<Matiere[]>([
-    { id: 1, nom: 'Mathématiques' },
-    { id: 2, nom: 'Français' },
-    { id: 3, nom: 'Anglais' },
-    { id: 4, nom: 'Physique-Chimie' },
-    { id: 5, nom: 'SVT' },
-  ]);
-  const [notes, setNotes] = useState<Record<number, NoteData>>({});
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [selectedYear, setSelectedYear] = useState('2024-2025');
+  const [selectedClass, setSelectedClass] = useState('CM2 A');
+  const [selectedPeriod, setSelectedPeriod] = useState('Séquence 1');
+  const [selectedMatiere, setSelectedMatiere] = useState('Mathématiques');
 
-  useEffect(() => {
-    // Initialiser les notes pour chaque matière
-    const initialNotes: Record<number, NoteData> = {};
-    matieres.forEach(matiere => {
-      initialNotes[matiere.id] = {
-        id_matiere: matiere.id,
-        sequence1: null,
-        sequence2: null,
-        sequence3: null,
-        sequence4: null,
-        sequence5: null,
-        sequence6: null,
-      };
-    });
-    setNotes(initialNotes);
-  }, []);
-
-  const getSequencesForTrimestre = (trimestre: 1 | 2 | 3): ['sequence1' | 'sequence2' | 'sequence3' | 'sequence4' | 'sequence5' | 'sequence6', 'sequence1' | 'sequence2' | 'sequence3' | 'sequence4' | 'sequence5' | 'sequence6'] => {
-    if (trimestre === 1) return ['sequence1', 'sequence2'];
-    if (trimestre === 2) return ['sequence3', 'sequence4'];
-    return ['sequence5', 'sequence6'];
+  // Mapping classe -> id pour ton backend
+  const classMapping: Record<string, number> = {
+    'CM2 A': 5,
+    'CM1 B': 6,
+    'CE2 A': 7,
   };
 
-  const handleNoteChange = (matiereId: number, sequence: keyof NoteData, value: string) => {
-    const numValue = value === '' ? null : parseFloat(value);
-    if (numValue !== null && (numValue < 0 || numValue > 20)) return;
-
-    setNotes(prev => ({
-      ...prev,
-      [matiereId]: {
-        ...prev[matiereId],
-        [sequence]: numValue,
-      },
-    }));
+  const yearMapping: Record<string, number> = {
+    '2024-2025': 2,
+    '2023-2024': 1,
   };
 
-  const handleSaveNotes = async () => {
-    setSaving(true);
-    setMessage(null);
-    let successCount = 0;
-    let errorCount = 0;
+  const periodMapping: Record<string, string> = {
+    'Séquence 1': 'sequence1',
+    'Séquence 2': 'sequence2',
+    'Trimestre 1': 'trimestre1',
+    'Trimestre 2': 'trimestre2',
+    'Trimestre 3': 'trimestre3',
+  };
 
+  const fetchStudents = async () => {
+    setLoading(true);
     try {
-      for (const matiere of matieres) {
-        const noteData = notes[matiere.id];
-        
-        // Vérifier si au moins une note est remplie
-        const hasData = Object.values(noteData).some(v => v !== null && typeof v === 'number');
-        if (!hasData) continue;
+      const classRoomId = classMapping[selectedClass];
+      const academieYearId = yearMapping[selectedYear];
 
-        try {
-          const response = await fetch(
-            `http://localhost:8000/notes/create/${idInscription}/${matiere.id}/`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                sequence1: noteData.sequence1 || 0,
-                sequence2: noteData.sequence2 || 0,
-                sequence3: noteData.sequence3 || 0,
-                sequence4: noteData.sequence4 || 0,
-                sequence5: noteData.sequence5 || 0,
-                sequence6: noteData.sequence6 || 0,
-              }),
-            }
-          );
+      const response = await api.get(
+        `${BASE_INSCRIPTION_SERVICE}/api/inscriptions/class/${classRoomId}/year/${academieYearId}/students`
+      );
 
-          if (response.ok) {
-            successCount++;
-          } else {
-            errorCount++;
-          }
-        } catch {
-          errorCount++;
-        }
-      }
-
-      if (successCount > 0) {
-        setMessage({
-          type: 'success',
-          text: `${successCount} matière(s) enregistrée(s) avec succès${errorCount > 0 ? ` (${errorCount} erreur(s))` : ''}`,
+      if (response.data && response.data.status) {
+        console.log(response.data)
+        const studentsData: Note[] = response.data.data.map((s: any) => {
+          const periodKey = periodMapping[selectedPeriod];
+          const firstNote = s.notes[0]?.sequences?.[periodKey] ?? '';
+          return {
+            id: s.inscription_id,
+            nom: `${s.student.last_name} ${s.student.first_name}`,
+            matricule: s.student.matricule,
+            note: firstNote.toString(),
+            interrogation: firstNote.toString(),
+            appreciation: firstNote ? getAppreciation(firstNote) : ''
+          };
         });
-      } else if (errorCount > 0) {
-        setMessage({
-          type: 'error',
-          text: `Erreur lors de l'enregistrement des notes`,
-        });
+        setNotes(studentsData);
       }
-    } catch (err) {
-      setMessage({
-        type: 'error',
-        text: 'Erreur lors de l\'enregistrement',
-      });
+    } catch (error) {
+      console.error('Erreur récupération élèves + notes:', error);
+      setNotes([]);
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
-  const [seq1, seq2] = getSequencesForTrimestre(trimestreActif);
+  useEffect(() => {
+    fetchStudents();
+  }, [selectedYear, selectedClass, selectedPeriod]);
+
+  const handleNoteChange = (id: number, field: 'interrogation' | 'note', value: string) => {
+    setNotes(notes.map(note => {
+      if (note.id === id) {
+        const updated = { ...note, [field]: value };
+        if (field === 'note' && value) {
+          const noteValue = parseFloat(value);
+          if (!isNaN(noteValue)) {
+            updated.appreciation = getAppreciation(value);
+          }
+        }
+        return updated;
+      }
+      return note;
+    }));
+  };
+
+  const calculerMoyenneClasse = (field: 'interrogation' | 'note') => {
+    const valeurs = notes.map(n => parseFloat(n[field] || '0')).filter(v => v > 0);
+    if (valeurs.length === 0) return '--';
+    const moyenne = valeurs.reduce((a, b) => a + b, 0) / valeurs.length;
+    return moyenne.toFixed(2);
+  };
+
+  const countElevesAvecNotes = () => notes.filter(n => n.note && parseFloat(n.note) > 0).length;
+
+  if (loading) return <div>Chargement des élèves...</div>;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
-                <User className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <input
-                  type="text"
-                  value={nomEleve}
-                  onChange={(e) => setNomEleve(e.target.value)}
-                  className="text-3xl font-bold text-gray-800 border-none focus:outline-none bg-transparent"
-                  placeholder="Nom de l'élève"
-                />
-                <div className="flex items-center gap-2 mt-1">
-                  <label className="text-sm text-gray-600">Inscription:</label>
-                  <input
-                    type="number"
-                    value={idInscription}
-                    onChange={(e) => setIdInscription(Number(e.target.value))}
-                    className="text-sm font-medium text-gray-700 border border-gray-300 rounded px-2 py-1 w-20"
-                  />
-                </div>
-              </div>
-            </div>
-            <button
-              onClick={handleSaveNotes}
-              disabled={saving}
-              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-3 px-8 rounded-lg flex items-center gap-2 transition-all shadow-lg disabled:opacity-50"
+    <div>
+      <h2 className="text-2xl font-bold text-foreground mb-6">Saisie des Notes - Tableur</h2>
+
+      {/* Filtres */}
+      <div className="bg-card rounded-lg shadow-sm border p-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">Année scolaire</label>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="w-full px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground"
             >
-              {saving ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  Enregistrement...
-                </>
-              ) : (
-                <>
-                  <Save className="w-5 h-5" />
-                  Enregistrer
-                </>
-              )}
-            </button>
+              <option>2024-2025</option>
+              <option>2023-2024</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">Classe</label>
+            <select
+              value={selectedClass}
+              onChange={(e) => setSelectedClass(e.target.value)}
+              className="w-full px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground"
+            >
+              <option>CM2 A</option>
+              <option>CM1 B</option>
+              <option>CE2 A</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">Matière</label>
+            <select
+              value={selectedMatiere}
+              onChange={(e) => setSelectedMatiere(e.target.value)}
+              className="w-full px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground"
+            >
+              <option>Mathématiques</option>
+              <option>Français</option>
+              <option>Sciences</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">Période</label>
+            <select
+              value={selectedPeriod}
+              onChange={(e) => setSelectedPeriod(e.target.value)}
+              className="w-full px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground"
+            >
+              <option>Séquence 1</option>
+              <option>Séquence 2</option>
+              <option>Trimestre 1</option>
+              <option>Trimestre 2</option>
+              <option>Trimestre 3</option>
+            </select>
           </div>
         </div>
+      </div>
 
-        {/* Message */}
-        {message && (
-          <div
-            className={`rounded-lg p-4 mb-6 ${
-              message.type === 'success'
-                ? 'bg-green-50 border-l-4 border-green-500'
-                : 'bg-red-50 border-l-4 border-red-500'
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              {message.type === 'success' ? (
-                <CheckCircle className="w-5 h-5 text-green-500" />
-              ) : (
-                <AlertCircle className="w-5 h-5 text-red-500" />
-              )}
-              <p
-                className={`font-medium ${
-                  message.type === 'success' ? 'text-green-800' : 'text-red-800'
-                }`}
-              >
-                {message.text}
+      {/* Tableau de saisie */}
+      <div className="bg-card rounded-lg shadow-sm border overflow-hidden">
+        <div className="bg-primary text-primary-foreground px-6 py-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-lg font-semibold">
+                Tableur de saisie - {selectedClass} - {selectedMatiere} - {selectedPeriod}
+              </h3>
+              <p className="text-sm opacity-90 mt-1">
+                Effectif: {notes.length} élèves • Type: {selectedPeriod}
               </p>
             </div>
-          </div>
-        )}
-
-        {/* Tabs Trimestres */}
-        <div className="bg-white rounded-t-lg shadow-lg overflow-hidden">
-          <div className="flex border-b">
-            {[1, 2, 3].map((trimestre) => (
-              <button
-                key={trimestre}
-                onClick={() => setTrimestreActif(trimestre as 1 | 2 | 3)}
-                className={`flex-1 py-4 px-6 font-bold text-lg transition-all ${
-                  trimestreActif === trimestre
-                    ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                Trimestre {trimestre}
-              </button>
-            ))}
-          </div>
-
-          {/* Table des notes */}
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gradient-to-r from-indigo-100 to-purple-100">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-700 w-12">#</th>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">Matière</th>
-                  <th className="px-6 py-4 text-center text-sm font-bold text-gray-700 w-40">
-                    Séquence {trimestreActif === 1 ? '1' : trimestreActif === 2 ? '3' : '5'}
-                  </th>
-                  <th className="px-6 py-4 text-center text-sm font-bold text-gray-700 w-40">
-                    Séquence {trimestreActif === 1 ? '2' : trimestreActif === 2 ? '4' : '6'}
-                  </th>
-                  <th className="px-6 py-4 text-center text-sm font-bold text-indigo-700 w-40 bg-indigo-50">
-                    Moyenne T{trimestreActif}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {matieres.map((matiere, index) => {
-                  const noteMatiere = notes[matiere.id] || {};
-                  const val1 = noteMatiere[seq1];
-                  const val2 = noteMatiere[seq2];
-                  const moyenne = val1 !== null && val2 !== null 
-                    ? ((val1 + val2) / 2).toFixed(2) 
-                    : '-';
-
-                  return (
-                    <tr key={matiere.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 font-bold text-sm">
-                          {index + 1}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <BookOpen className="w-5 h-5 text-gray-400" />
-                          <span className="font-medium text-gray-800">{matiere.nom}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <input
-                          type="number"
-                          min="0"
-                          max="20"
-                          step="0.5"
-                          value={val1 ?? ''}
-                          onChange={(e) => handleNoteChange(matiere.id, seq1, e.target.value)}
-                          className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 text-center text-lg font-semibold focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                          placeholder="-"
-                        />
-                      </td>
-                      <td className="px-6 py-4">
-                        <input
-                          type="number"
-                          min="0"
-                          max="20"
-                          step="0.5"
-                          value={val2 ?? ''}
-                          onChange={(e) => handleNoteChange(matiere.id, seq2, e.target.value)}
-                          className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 text-center text-lg font-semibold focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                          placeholder="-"
-                        />
-                      </td>
-                      <td className="px-6 py-4 bg-indigo-50">
-                        <div className="text-center">
-                          <span className={`text-xl font-bold ${
-                            moyenne === '-' ? 'text-gray-400' : 
-                            parseFloat(moyenne) >= 15 ? 'text-green-600' :
-                            parseFloat(moyenne) >= 10 ? 'text-yellow-600' :
-                            'text-red-600'
-                          }`}>
-                            {moyenne}
-                          </span>
-                          {moyenne !== '-' && (
-                            <span className="text-sm text-gray-500"> / 20</span>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <div className="flex gap-3">
+              <Button variant="secondary" size="sm">
+                <Upload className="w-4 h-4 mr-2" /> Importer Excel
+              </Button>
+              <Button variant="secondary" size="sm">
+                <Download className="w-4 h-4 mr-2" /> Exporter Excel
+              </Button>
+            </div>
           </div>
         </div>
 
-        {/* Footer Info */}
-        <div className="bg-white rounded-b-lg shadow-lg p-4 border-t-2 border-indigo-100">
-          <div className="flex items-center justify-between text-sm text-gray-600">
-            <div className="flex items-center gap-4">
-              <span>📝 Notes sur 20</span>
-              <span>🟢 ≥ 15 Excellent</span>
-              <span>🟡 10-15 Bien</span>
-              <span>🔴 {'<'} 10 À améliorer</span>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr>
+                <th className="border border-border bg-primary text-primary-foreground px-3 py-2 text-xs font-semibold text-center w-12">#</th>
+                <th className="border border-border bg-primary text-primary-foreground px-3 py-2 text-xs font-semibold text-left w-32">Matricule</th>
+                <th className="border border-border bg-primary text-primary-foreground px-4 py-2 text-xs font-semibold text-left min-w-[180px]">Nom et Prénom</th>
+                <th className="border border-border bg-primary text-primary-foreground px-3 py-2 text-xs font-semibold text-center min-w-[120px]">Interrogation<br />/20</th>
+                <th className="border border-border bg-stats-green text-white px-3 py-2 text-xs font-semibold text-center min-w-[120px]">Note<br />/20</th>
+                <th className="border border-border bg-stats-green text-white px-4 py-2 text-xs font-semibold text-center min-w-[140px]">Appréciation</th>
+              </tr>
+            </thead>
+            <tbody>
+              {notes.map((eleve, index) => (
+                <tr key={eleve.id} className="hover:bg-muted/50">
+                  <td className="border border-border px-3 py-1 text-center text-sm bg-muted/30 font-medium">{index + 1}</td>
+                  <td className="border border-border px-3 py-1 text-sm bg-muted/30 font-mono">{eleve.matricule}</td>
+                  <td className="border border-border px-4 py-1 text-sm font-medium bg-muted/30">{eleve.nom}</td>
+                  <td className="border border-border p-0">
+                    <Input
+                      type="number"
+                      min="0"
+                      max="20"
+                      step="0.25"
+                      value={eleve.interrogation}
+                      onChange={(e) => handleNoteChange(eleve.id, 'interrogation', e.target.value)}
+                      onFocus={() => setSelectedCell(`${eleve.id}-inter`)}
+                      className={`w-full h-full px-3 py-2 text-center text-sm border-none rounded-none focus:ring-2 focus:ring-ring ${
+                        selectedCell === `${eleve.id}-inter` ? 'bg-yellow-50 dark:bg-yellow-950' : ''
+                      }`}
+                      placeholder="--"
+                    />
+                  </td>
+                  <td className="border border-border p-0">
+                    <Input
+                      type="number"
+                      min="0"
+                      max="20"
+                      step="0.25"
+                      value={eleve.note}
+                      onChange={(e) => handleNoteChange(eleve.id, 'note', e.target.value)}
+                      onFocus={() => setSelectedCell(`${eleve.id}-note`)}
+                      className={`w-full h-full px-3 py-2 text-center text-sm border-none rounded-none focus:ring-2 focus:ring-ring ${
+                        selectedCell === `${eleve.id}-note` ? 'bg-yellow-50 dark:bg-yellow-950' : ''
+                      }`}
+                      placeholder="--"
+                    />
+                  </td>
+                  <td className={`border border-border px-4 py-2 text-center text-xs font-semibold ${
+                    eleve.appreciation ? getAppreciationColor(eleve.appreciation) : 'bg-muted/30'
+                  }`}>
+                    {eleve.appreciation || '--'}
+                  </td>
+                </tr>
+              ))}
+              <tr className="bg-muted font-semibold">
+                <td colSpan={3} className="border border-border px-4 py-2 text-sm text-right">Moyennes de la classe:</td>
+                <td className="border border-border px-3 py-2 text-center text-sm">{calculerMoyenneClasse('interrogation')}</td>
+                <td className="border border-border px-3 py-2 text-center text-sm bg-stats-green/20">{calculerMoyenneClasse('note')}</td>
+                <td className="border border-border px-4 py-2 text-center text-xs">{countElevesAvecNotes()} élève(s)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div className="bg-muted/30 px-6 py-4 border-t flex items-center justify-between text-sm text-muted-foreground">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center">
+              <div className="w-4 h-4 bg-yellow-50 dark:bg-yellow-950 border border-border mr-2"></div>
+              <span>Cellule sélectionnée</span>
             </div>
-            <span className="font-medium">
-              {matieres.length} matières
-            </span>
+            <div className="flex items-center">
+              <div className="w-4 h-4 bg-stats-green/20 border border-border mr-2"></div>
+              <span>Calcul automatique</span>
+            </div>
           </div>
+          <div>Les appréciations sont calculées automatiquement</div>
         </div>
       </div>
     </div>
   );
 };
-
-export default NotesPage;

@@ -49,7 +49,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-        "corsheaders.middleware.CorsMiddleware",
+        # "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -127,16 +127,16 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8081",
 ]
 
-CORS_ALLOW_CREDENTIALS = True
-
-
-ALLOWED_HOSTS = [
-    "localhost",
-    "127.0.0.1",
-    "192.168.0.104",        # ← ton IP LAN
-    "192.168.0.*",          # ou même tout le réseau local
-    "*",                    # ← EN DEV UNIQUEMENT (retrait en prod)
-]
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = []
+CORS_ALLOW_CREDENTIALS = False
+# ALLOWED_HOSTS = [
+#     "localhost",
+#     "127.0.0.1",
+#     "192.168.0.104",        # ← ton IP LAN
+#     "192.168.0.*",          # ou même tout le réseau local
+#     "*",                    # ← EN DEV UNIQUEMENT (retrait en prod)
+# ]
 
 # OU encore plus propre en 2025 (recommandé)
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "*").split(",")
