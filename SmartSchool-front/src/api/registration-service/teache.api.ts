@@ -1,7 +1,8 @@
 import { api } from "../axios";
 import { BASE_REGISTRATION } from "../axios";
 
-interface teacherType{
+// Ce que l'API renvoie
+export interface TeacherType {
     id: number;
     school_id: number;
     user_id: number;
@@ -10,16 +11,27 @@ interface teacherType{
     birth_date: string;
 }
 
-export  const createTeacher = async (dataTeacher:teacherType):Promise<teacherType> => {
-    const response = await api.post<teacherType>(`${BASE_REGISTRATION}/tearches`,dataTeacher)
-    return response.data
+// Ce qu'on envoie pour créer un enseignant
+export interface TeacherCreateDTO {
+    school_id: number;
+    last_name: string;
+    first_name: string;
+    password: string;
+    birth_date: string;
+    sex: string;
 }
 
-export const getTeacherById = async (id: number):Promise<teacherType>  => {
-    const response = await api.get<teacherType>(`${BASE_REGISTRATION}/tearches/${id}`);
+export const createTeacher = async (dataTeacher: TeacherCreateDTO): Promise<TeacherType> => {
+    const response = await api.post<TeacherType>(`${BASE_REGISTRATION}/teachers`, dataTeacher);
     return response.data;
-}
-export const getTeacherBySchoolId = async (schoolId:number): Promise<teacherType> => {
-    const response = await api.get<teacherType>(`${BASE_REGISTRATION}/tearches/school/${schoolId}`);
-    return response.data
-}
+};
+
+export const getTeacherById = async (id: number): Promise<TeacherType> => {
+    const response = await api.get<TeacherType>(`${BASE_REGISTRATION}/teachers/${id}`);
+    return response.data;
+};
+
+export const getTeacherBySchoolId = async (schoolId: number): Promise<TeacherType[]> => {
+    const response = await api.get<TeacherType[]>(`${BASE_REGISTRATION}/teachers/school/${schoolId}`);
+    return response.data;
+};

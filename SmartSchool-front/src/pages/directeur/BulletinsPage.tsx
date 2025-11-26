@@ -1,8 +1,14 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { FileText, Search, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { eleves, classes } from '@/constants/mockData';
+import {
+  genererBulletinEleve,
+  genererBulletinsClasse,
+  genererBulletinsAnnee,
+  exportBulletinPDF
+} from '@/api/bulletinService';
 
 type GenerationType = 'annee' | 'classe' | 'eleve';
 
@@ -10,6 +16,53 @@ export const BulletinsPage: React.FC = () => {
   const [generationType, setGenerationType] = useState<GenerationType>('classe');
   const [selectedClasse, setSelectedClasse] = useState('CM2 A');
   const [searchTerm, setSearchTerm] = useState('');
+
+  // =========================
+  // Fonctions de génération
+  // =========================
+  const handleGenerateEleve = async (eleveId: number, nom: string) => {
+    try {
+      await genererBulletinEleve(eleveId, 'Trimestre 1');
+      alert(`Bulletin généré pour ${nom}`);
+    } catch (e) {
+      alert('Erreur lors de la génération du bulletin');
+    }
+  };
+
+  const handleGenerateClasse = async () => {
+    try {
+      await genererBulletinsClasse(selectedClasse, 'Trimestre 1');
+      alert(`Bulletins générés pour la classe ${selectedClasse}`);
+    } catch (e) {
+      alert('Erreur lors de la génération des bulletins de classe');
+    }
+  };
+
+  const handleGenerateAnnee = async () => {
+    try {
+      await genererBulletinsAnnee('2024-2025');
+      alert('Tous les bulletins de l’année ont été générés !');
+    } catch (e) {
+      alert("Erreur lors de la génération des bulletins de l'année");
+    }
+  };
+
+  const handleExportPDF = async (bulletinId: number) => {
+  try {
+    const blob = await exportBulletinPDF(bulletinId);
+    const url = window.URL.createObjectURL(blob); // ✅ blob est bien typé
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bulletin-${bulletinId}.pdf`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error(error);
+    alert('Erreur lors de l’export PDF');
+  }
+};
+
+
 
   return (
     <div>
@@ -83,13 +136,13 @@ export const BulletinsPage: React.FC = () => {
             <label className="block text-sm font-medium text-foreground mb-2">
               Classe
             </label>
-            <select 
+            <select
               className="w-full px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground"
               disabled={generationType === 'annee'}
               value={selectedClasse}
               onChange={(e) => setSelectedClasse(e.target.value)}
             >
-              {classes.map(classe => (
+              {classes.map((classe) => (
                 <option key={classe.id} value={classe.nom}>{classe.nom}</option>
               ))}
             </select>
@@ -117,20 +170,25 @@ export const BulletinsPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Boutons d'action pour Par classe */}
+        {/* Boutons d'action */}
         {generationType === 'classe' && (
           <div className="flex gap-3">
-            <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={handleGenerateClasse}
+            >
               <FileText className="w-4 h-4 mr-2" />
               Générer les bulletins (PDF)
             </Button>
           </div>
         )}
 
-        {/* Génération par année */}
         {generationType === 'annee' && (
           <div className="flex gap-3">
-            <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={handleGenerateAnnee}
+            >
               <FileText className="w-4 h-4 mr-2" />
               Générer tous les bulletins de l'année
             </Button>
@@ -141,9 +199,7 @@ export const BulletinsPage: React.FC = () => {
         {generationType === 'eleve' && (
           <div className="mt-2">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-foreground">
-                Sélectionner un élève
-              </h3>
+              <h3 className="text-lg font-semibold text-foreground">Sélectionner un élève</h3>
               <div className="relative w-64">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
@@ -168,9 +224,7 @@ export const BulletinsPage: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {eleves
-                    .filter(eleve => 
-                      eleve.nom.toLowerCase().includes(searchTerm.toLowerCase())
-                    )
+                    .filter(eleve => eleve.nom.toLowerCase().includes(searchTerm.toLowerCase()))
                     .map((eleve) => (
                       <tr key={eleve.id} className="hover:bg-muted/50">
                         <td className="px-4 py-3 text-sm text-foreground">{eleve.nom}</td>
@@ -192,10 +246,7 @@ export const BulletinsPage: React.FC = () => {
                           <Button
                             size="sm"
                             className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
-                            onClick={() => {
-                              // Logique de génération du bulletin
-                              console.log('Générer bulletin pour', eleve.nom);
-                            }}
+                            onClick={() => handleGenerateEleve(eleve.id, eleve.nom)}
                           >
                             <Printer className="w-4 h-4" />
                             Générer bulletin
@@ -205,10 +256,8 @@ export const BulletinsPage: React.FC = () => {
                     ))}
                 </tbody>
               </table>
-              
-              {eleves.filter(eleve => 
-                eleve.nom.toLowerCase().includes(searchTerm.toLowerCase())
-              ).length === 0 && (
+
+              {eleves.filter(eleve => eleve.nom.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 && (
                 <div className="px-4 py-8 text-center text-muted-foreground">
                   Aucun élève trouvé
                 </div>
