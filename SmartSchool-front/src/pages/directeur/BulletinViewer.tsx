@@ -413,7 +413,7 @@ const handleTelechargerPDF = () => {
             </div>
 
           {/* Matière */}
-          <div>
+          {/* <div>
             <label className="block text-sm font-semibold mb-2">Matière</label>
             <select
               value={selectedMatiere ?? ''}
@@ -425,7 +425,7 @@ const handleTelechargerPDF = () => {
                 <option key={m.id} value={m.id}>{m.name}</option>
               ))}
             </select>
-          </div>
+          </div> */}
 
             <div>
               <label className="block text-sm font-medium mb-1">Type</label>
@@ -470,10 +470,10 @@ const handleTelechargerPDF = () => {
               </p>
             </div>
             <div className="flex gap-3">
-              <Button onClick={handleGenererTousPDF} disabled={generating}>
+              {/* <Button onClick={handleGenererTousPDF} disabled={generating}>
                 <Download className="w-4 h-4 mr-2" />
                 Télécharger tous les bulletins (ZIP)
-              </Button>
+              </Button> */}
               {/* <Button variant="outline">
                 <Download className="w-4 h-4 mr-2" />
                 ZIP classe
