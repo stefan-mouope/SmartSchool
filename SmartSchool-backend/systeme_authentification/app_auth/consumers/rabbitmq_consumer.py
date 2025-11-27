@@ -1,3 +1,5 @@
+
+
 import json
 import threading
 import logging
@@ -54,38 +56,8 @@ def get_refreshed_tokens(refresh_token_str: str) -> dict:
         return {"success": False, "error": str(e)}
 
 
-
-
-# def publish_token_refreshed_event(user_id, new_access, new_refresh):
-#     connection = pika.BlockingConnection(
-#         pika.ConnectionParameters(
-#             host="rabbitmq",
-#             port=5672,
-#             credentials=pika.PlainCredentials("guest", "guest")
-#         )
-#     )
-#     channel = connection.channel()
-
-#     channel.exchange_declare(exchange="auth.events", exchange_type="topic", durable=False)
-
-#     event = {
-#         "event": "token.refreshed",
-#         "user_id": user_id,
-#         "access_token": new_access,
-#         "refresh_token": new_refresh
-#     }
-
-#     channel.basic_publish(
-#         exchange="auth.events",
-#         routing_key="auth.token.refreshed",
-#         body=json.dumps(event)
-#     )
-
-#     connection.close()
-
 def verify_and_refresh_token(access_token: str, refresh_token: str = None) -> dict:
     try:
-        # 🔍 Valider l'access token
         validated = jwt_auth.get_validated_token(access_token)
         user = jwt_auth.get_user(validated)
         payload = validated.payload
@@ -100,46 +72,29 @@ def verify_and_refresh_token(access_token: str, refresh_token: str = None) -> di
         }
 
     except InvalidToken:
-        print("Access token invalide, tentative de refresh…", access_token)
-
         if not refresh_token:
-            return {"valid": False, "error": "Refresh token manquant"}
+            return {"valid": False, "error": "Token expiré, refresh manquant"}
 
-        try:
-            # 🆕 Rafraîchir directement avec SimpleJWT
-            refreshed = get_refreshed_tokens(refresh_token)
+        refreshed = get_refreshed_tokens(refresh_token)
+        if not refreshed["success"]:
+            return {"valid": False, "error": "Refresh échoué"}
 
-            if not refreshed["success"]:
-                return {"valid": False, "error": "Refresh échoué"}
+        new_access = refreshed["access_token"]
 
-            new_access = refreshed["access_token"]
-            new_refresh = refreshed["refresh_token"]
+        validated = jwt_auth.get_validated_token(new_access)
+        user = jwt_auth.get_user(validated)
+        payload = validated.payload
 
-            # Valider le nouveau access
-            validated = jwt_auth.get_validated_token(new_access)
-            user = jwt_auth.get_user(validated)
-            payload = validated.payload
+        return {
+            "valid": True,
+            "needs_refresh": True,
+            "user_id": payload.get("user_id"),
+            "username": getattr(user, "username", payload.get("username")),
+            "role": payload.get("role"),
+            "new_access_token": new_access,
+            "new_refresh_token": refreshed["refresh_token"]
+        }
 
-            # print("✔ Tokens rafraîchis, publication de l'évènement token.refreshed")
-
-            # publish_token_refreshed_event(
-            #     user_id=payload.get("user_id"),
-            #     new_access=new_access,
-            #     new_refresh=new_refresh
-            # )
-
-            return {
-                "valid": True,
-                "needs_refresh": True,
-                "user_id": payload.get("user_id"),
-                "username": getattr(user, "username", payload.get("username")),
-                "role": payload.get("role"),
-                "new_access_token": new_access,
-                "new_refresh_token": new_refresh
-            }
-
-        except Exception as e:
-            return {"valid": False, "error": str(e)}
 
 # ---------------------------------------
 # 🔥 CONSUMER 1 → AUTH VERIFY + ROLES
@@ -171,10 +126,10 @@ class RabbitMQConsumer(threading.Thread):
             try:
                 data = json.loads(body)
                 access = data.get("token")
-                refresh = data.get("refresh")
+                refresh = data.get("refresh_token")
                 action = data.get("action", "")
-                print(f"Received auth.verify request for action '{action}'")
-                result = verify_and_refresh_token(access,refresh)
+
+                result = verify_and_refresh_token(access, refresh)
 
                 # ❌ Token invalide
                 if not result["valid"]:
@@ -254,7 +209,7 @@ class RabbitMQRegistrationConsumer(threading.Thread):
 
         def callback(ch, method, properties, body):
             payload = json.loads(body)
-            print(payload)
+
             try:
                 with transaction.atomic():
                     serializer = RegisterSerializer(data=payload)
