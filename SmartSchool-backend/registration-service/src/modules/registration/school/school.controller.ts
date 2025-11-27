@@ -7,14 +7,28 @@ const schoolService = new SchoolService();
 
 export class SchoolController {
   // Créer une école
-  async create(req: Request, res: Response) {
-    try {
-      const school = await schoolService.create(req.body);
-      res.status(201).json(school);
-    } catch (error: any) {
-      res.status(400).json({ error: error.message });
+  
+createSchool = async (req: Request, res: Response) => {
+  try {
+    const data = { ...req.body };
+
+    // 🎯 intégrer automatiquement le logo Cloudinary
+    if (req.file) {
+      data.logo = req.file.path;            // URL Cloudinary
+      data.logo_public_id = req.file.filename; // ID dans Cloudinary
     }
+
+    const school = await schoolService.create(data);
+
+    res.status(201).json({
+      message: "École créée avec succès",
+      school,
+    });
+  } catch (error: any) {
+    console.error("Erreur création école :", error);
+    res.status(500).json({ error: error.message });
   }
+};
 async findAllSchoolWithoutDirector(req: Request, res: Response) {
   try {
     console.log("test"); // pour vérifier que la fonction est appelée
