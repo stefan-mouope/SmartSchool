@@ -34,8 +34,9 @@ export class SchoolService {
       const school = await School.create(data, { transaction });
 
       // 2) Création des classes
-      const classrooms = this.defaultClasses.map((name) => ({
+      const classrooms = this.defaultClasses.map((name,i) => ({
         name,
+        level: i + 1,
         school_id: school.id,
       }));
       await ClassRoom.bulkCreate(classrooms, { transaction });

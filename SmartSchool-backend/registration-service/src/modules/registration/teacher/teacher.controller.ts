@@ -10,13 +10,16 @@ export class TeacherController {
     try {
       // Générer automatiquement le username
       const username = `${req.body.first_name.toLowerCase()}.${req.body.last_name.toLowerCase()}`;
+      const newTeacher = await teacherService.create(req.body);
 
       // Préparer le payload pour Django
       const payload = {
         ...req.body,
         role: "enseignant",
-        username: username
+        username: username,
+        registrie_id:newTeacher ? newTeacher.id : null,
       };
+
 
       // Publier l'événement RPC et attendre la réponse Django
       const rpcResponse = await publishDynamiqueEvent(
@@ -28,17 +31,17 @@ export class TeacherController {
       console.log("📥 Réponse RPC Django :", rpcResponse);
 
       if (!rpcResponse.success) {
+        await teacherService.delete(newTeacher?.id);
         return res.status(400).json({ error: rpcResponse.error });
       }
 
       // Créer l'enseignant dans le microservice Node
-      const teacher = await teacherService.create(req.body);
 
       // Réponse finale
       res.status(201).json({
         success: true,
         user_system: rpcResponse.user,
-        teacher_service: teacher,
+        teacher_service: newTeacher,
       });
     } catch (error: any) {
       console.error("❌ Erreur controller create_teacher:", error);

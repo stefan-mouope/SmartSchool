@@ -1,4 +1,4 @@
-import { Payer, Inscription, Tranche } from "../models/associations.js";
+import { Payer, Inscription, Tranche, ClassRoomTranche } from "../models/associations.js";
 
 // ➕ Enregistrer un paiement
 export const createPayer = async (req, res) => {
@@ -76,5 +76,120 @@ export const getPayerById = async (req, res) => {
     res.json(payer);
   } catch (error) {
     res.status(500).json({ message: "Erreur serveur", error });
+  }
+};
+
+
+
+
+export const getPaymentStatsByYear = async (req, res) => {
+  try {
+    const { academieYear_id } = req.params;
+
+    if (!academieYear_id) {
+      return res.status(400).json({ message: "Paramètre academieYear_id manquant" });
+    }
+
+    // Récupérer toutes les inscriptions
+    const inscriptions = await Inscription.findAll({
+      where: { academieYear_id },
+      include: [
+        // {
+        //   model: Student,
+        //   attributes: ["id", "matricule", "last_name", "first_name"]
+        // },
+        {
+          model: Tranche,
+          as: "tranches_payees",
+          attributes: ["id", "amount"]
+        }
+      ]
+    });
+
+    if (inscriptions.length === 0) {
+      return res.json({
+        status: true,
+        message: "Aucune inscription trouvée pour cette année",
+        stats: {
+          total_collected: 0,
+          total_pending: 0,
+          total_expected: 0,
+          collection_rate: 0,
+          total_students: 0,
+          students_paid: 0,
+          students_pending: 0
+        }
+      });
+    }
+
+    let total_students = inscriptions.length;
+    let total_collected = 0;
+    let total_expected = 0;
+    let students_paid = 0;
+
+    // Cache pour éviter les re-findAll
+    const classTranchesCache = {};
+
+    for (const ins of inscriptions) {
+      const classRoomId = ins.classRoom_id;
+
+      // Charger les tranches de la classe
+      if (!classTranchesCache[classRoomId]) {
+        const classTranches = await ClassRoomTranche.findAll({
+          where: { classRoom_id: classRoomId },
+          include: [
+            {
+              model: Tranche,
+              attributes: ["id", "tranche_name"]
+            }
+          ]
+        });
+
+        // Total attendu pour cette classe = somme des montants ClassRoomTranche.amount
+        classTranchesCache[classRoomId] = {
+          total: classTranches.reduce((sum, t) => sum + t.amount, 0),
+        };
+      }
+
+      const totalAmountForStudent = classTranchesCache[classRoomId].total;
+      total_expected += totalAmountForStudent;
+
+      // Montant déjà payé
+      const paid_amount = ins.tranches_payees.reduce(
+        (sum, t) => sum + t.amount,
+        0
+      );
+
+      total_collected += paid_amount;
+
+      if (paid_amount >= totalAmountForStudent) {
+        students_paid++;
+      }
+    }
+
+    const students_pending = total_students - students_paid;
+    const total_pending = total_expected - total_collected;
+
+    const collection_rate =
+      total_expected === 0
+        ? 0
+        : Number(((total_collected / total_expected) * 100).toFixed(2));
+
+    return res.json({
+      status: true,
+      stats: {
+        total_collected,
+        total_pending,
+        total_expected,
+        collection_rate,
+        total_students,
+        students_paid,
+        students_pending,
+      },
+    });
+
+  } catch (error) {
+    console.error("Erreur stats année :", error);
+    res.status(500).json({ message: "Erreur serveur", error: error.message });
   }
 };

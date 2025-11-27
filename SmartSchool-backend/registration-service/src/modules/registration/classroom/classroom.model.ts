@@ -12,7 +12,7 @@ ClassRoom.init(
   {
     id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
     name: { type: DataTypes.STRING, allowNull: false },
-    // level: { type: DataTypes.INTEGER, allowNull: false },
+    level: { type: DataTypes.INTEGER, allowNull: true },
     school_id: { type: DataTypes.INTEGER, allowNull: false },
   },
   {

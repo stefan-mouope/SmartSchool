@@ -52,6 +52,17 @@ export const getStudentById = async (req, res) => {
   }
 };
 
+// get student by school_id
+export const getStudentsBySchoolId = async (req, res) => {
+  try {
+    const { school_id } = req.params;
+    const students = await Student.findAll({ where: { school_id } });
+    res.json(students);
+  } catch (error) {
+    res.status(500).json({ message: "Erreur serveur", error });
+  }
+}
+
 // 🗑️ Supprimer un étudiant
 export const deleteStudent = async (req, res) => {
   try {

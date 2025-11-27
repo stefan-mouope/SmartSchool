@@ -9,11 +9,12 @@ export const menus: Record<UserRole, MenuItem[]> = {
   ],
   directeur: [
     { id: 'dashboard', label: 'Tableau de bord', icon: Home },
-    { id: 'enseignants', label: 'Enseignants', icon: GraduationCap },
-    { id: 'classes', label: 'Classes', icon: BookOpen },
-    { id: 'matieres', label: 'Matières', icon: FileText },
-    { id: 'eleves', label: 'Élèves', icon: Users },
-    { id: 'paiements', label: 'Paiements', icon: DollarSign },
+    { id: 'enseignants', label: 'Gestion Enseignants', icon: GraduationCap },
+    { id: 'classes', label: 'Gestion Classes', icon: BookOpen },
+    { id: 'matieres', label: 'Gestion Matières', icon: FileText },
+    { id: 'eleves', label: 'Gestion Élèves', icon: Users },
+    { id: 'paiements', label: 'Gestion Paiements', icon: DollarSign },
+    { id: 'tranches', label: 'Gestion des Tranches', icon: DollarSign },
     { id: 'bulletins', label: 'Bulletins', icon: FileText },
     { id: 'annees', label: 'Années scolaires', icon: Calendar }
   ],

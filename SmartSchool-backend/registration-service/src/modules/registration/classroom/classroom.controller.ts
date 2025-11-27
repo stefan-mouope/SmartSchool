@@ -49,13 +49,36 @@ export class ClassRoomController {
   // Récupérer les classes par niveau
   async findByLevel(req: Request, res: Response) {
     try {
-      const level = req.params.level;
-      const classrooms = await classRoomService.findByLevel(level);
+      const level = parseInt(req.params.level);
+      const school_id = parseInt(req.params.school_id);
+      const classrooms = await classRoomService.findByLevel(level, school_id);
       res.status(200).json(classrooms);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
   }
+
+async getLevelsBySchool(req: Request, res: Response) {
+  try {
+    const schoolId = parseInt(req.params.schoolId);
+    const levels = await classRoomService.getLevelsBySchool(schoolId);
+    res.status(200).json({ levels });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
+
+ getLevelsWithTranchesController = async (req: Request, res: Response) => {
+  try {
+    const schoolId = parseInt(req.params.schoolId);
+    const data = await classRoomService.getLevelsWithTranches(schoolId);
+
+    res.json({ status: true, data });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
   // Mettre à jour une classe
   async update(req: Request, res: Response) {

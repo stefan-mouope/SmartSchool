@@ -14,7 +14,9 @@ router.get("/level/:level", (req, res) => classRoomController.findByLevel(req, r
 router.get("/:id", (req, res) => classRoomController.findById(req, res));
 router.put("/:id", (req, res) => classRoomController.update(req, res));
 router.delete("/:id", (req, res) => classRoomController.delete(req, res));
-
+router.get("/school/:schoolId/levels-tranches", (req, res) => classRoomController.getLevelsWithTranchesController(req, res));
+router.get("/levels/school/:schoolId", (req, res) => classRoomController.getLevelsBySchool(req, res));
+router.get("/level/:school_id/:level", (req, res) => classRoomController.findByLevel(req, res));
 export default router;
 
 

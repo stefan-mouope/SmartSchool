@@ -33,7 +33,7 @@ export const createInscription = async (req, res) => {
     }
 
     // ✅ Création de l'étudiant s'il n'existe pas déjà
-    let nouveauStudent = await Student.findOne({ where: { matricule: student.matricule } });
+    let nouveauStudent = await Student.findOne({ where: { matricule:'tests' } });
 
     if (!nouveauStudent) {
       nouveauStudent = await Student.create(student);
@@ -105,6 +105,30 @@ export const getInscriptionById = async (req, res) => {
     res.status(500).json({ message: "Erreur serveur", error: error.message });
   }
 };
+
+export const getInscriptionByClassRoomId = async (req, res) => {
+  try {
+    const { classRoom_id } = req.params;
+
+    const inscription = await Inscription.findAll({
+      where: { classRoom_id },
+      include: [
+        { model: Student },
+        { model: Tranche, as: "tranches_payees" },
+      ],
+    });
+
+    if (!inscription) {
+      return res.status(404).json({ message: "Inscription non trouvée" });
+    }
+
+    res.json(inscription);
+  } catch (error) {
+    console.error("Erreur récupération inscription :", error);
+    res.status(500).json({ message: "Erreur serveur", error: error.message });
+  }
+};
+
 
 // 🗑️ Supprimer une inscription
 export const deleteInscription = async (req, res) => {
@@ -223,3 +247,12 @@ export const getStudentsWithNotes = async (req, res) => {
     res.status(500).json({ message: "Erreur serveur", error: error.message });
   }
 };
+
+
+
+
+
+
+
+
+

@@ -11,7 +11,7 @@ const Student = sequelize.define("Student", {
     type: DataTypes.STRING,
     allowNull: false,
     unique: true,
-    defaultValue: () => `STD-${randomUUID().slice(0, 8)}`,
+    defaultValue: () => `STD-lll`,
   },
   last_name: {
     type: DataTypes.STRING,

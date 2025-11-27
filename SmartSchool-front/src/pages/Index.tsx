@@ -14,6 +14,10 @@ import { BulletinsPage } from '@/pages/directeur/BulletinsPage';
 import  EnseignantDashboard  from '@/pages/enseignant/EnseignantDashboard';
 import  { NotesPage } from '@/pages/enseignant/NotesPage';
 import { DirecteursPage } from './super/DirectorPage';
+import { ClassesPage } from './directeur/ClassesPage';
+import { Sub } from '@radix-ui/react-context-menu';
+import { SubjectsPage } from './directeur/SubjectsPage';
+import { TranchesPage } from './directeur/TranchesPage';
 
 const Index = () => {
   const [currentUser, setCurrentUser] = useState<UserRole>('directeur');
@@ -42,15 +46,19 @@ const Index = () => {
         case 'dashboard':
           return <DirecteurDashboard />;
         case 'enseignants':
-          return <EnseignantsPage onAddEnseignant={() => { setModalType('enseignant'); setShowModal(true); }} />;
+          return <EnseignantsPage />;
         case 'eleves':
-          return <ElevesPage onAddEleve={() => { setModalType('eleve'); setShowModal(true); }} />;
+          return <ElevesPage  />;
         case 'paiements':
           return <PaiementsPage />;
         case 'bulletins':
           return <BulletinsPage />;
         case 'classes':
+          return <ClassesPage />;
         case 'matieres':
+          return <SubjectsPage/>
+        case 'tranches':
+          return <TranchesPage/>
         case 'annees':
           return (
             <div>

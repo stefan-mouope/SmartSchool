@@ -153,8 +153,8 @@ export const SchoolCreationForm: React.FC<SchoolFormProps> = ({ isOpen, onCancel
 
     if (!formData.phone_school.trim()) {
       newErrors.phone_school = 'Le téléphone est requis';
-    } else if (!/^\+237[0-9]{9}$/.test(formData.phone_school)) {
-      newErrors.phone_school = 'Format: +237XXXXXXXXX';
+    } else if (!/^\[0-9]{9}$/.test(formData.phone_school)) {
+      newErrors.phone_school = 'Format: 9 chiffres';
     }
 
     if (!formData.region) {
@@ -334,7 +334,7 @@ export const SchoolCreationForm: React.FC<SchoolFormProps> = ({ isOpen, onCancel
                 value={formData.phone_school}
                 onChange={handleChange}
                 className="pl-10"
-                placeholder="+237650123456"
+                placeholder="650123456"
                 disabled={isSubmitting || submitSuccess}
               />
             </FormField>

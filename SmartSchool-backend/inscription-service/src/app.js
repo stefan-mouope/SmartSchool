@@ -7,6 +7,7 @@ import eleveRoutes from "./routes/eleveRoutes.js";
 import trancheRoutes from "./routes/trancheRoutes.js";
 import payementRoutes from "./routes/payementRoutes.js";
 import inscriptionRoutes from "./routes/inscriptionRoutes.js";
+import classRoomTrancheRoutes from "./routes/classRoomTrancheRoutes.js";
 
 dotenv.config();
 
@@ -24,7 +25,7 @@ app.use("/api/eleves", eleveRoutes);
 app.use("/api/tranches", trancheRoutes);
 app.use("/api/payements", payementRoutes);
 app.use("/api/inscriptions", inscriptionRoutes);
-
+app.use("/api/classroom-tranches", classRoomTrancheRoutes);
 // test route
 app.get("/", (req, res) => {
   res.send("Service Inscription OK");

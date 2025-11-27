@@ -3,7 +3,14 @@ dotenv.config();
 
 import app from "./app.js";
 import sequelize from "./config/db.js";
-import { Student, Inscription, Tranche, Payer } from "./models/associations.js";
+import {
+  Student,
+  Inscription,
+  Tranche,
+  Payer,
+  ClassRoomTranche,  // ⬅️ IMPORT IMPORTANT
+} from "./models/associations.js";
+
 import eurekaClient from "./eureka/eurekaClient.js";
 import { connectRabbitMQ } from "./config/rabbitmq.js";
 import { startVerifyInscriptionConsumer } from "./consumers/verifyInscriptionConsumer.js";
@@ -15,10 +22,9 @@ const PORT = process.env.PORT || 5000;
     // -------------------------
     // Synchronisation des modèles
     // -------------------------
-    await Student.sync();
-    await Tranche.sync();
-    await Inscription.sync();
-    await Payer.sync();
+    await sequelize.sync(); 
+    // ⬅️ Toujours préférable : crée automatiquement toutes les tables
+    // incluant ClassRoomTranche et les relations
 
     console.log("🗄️  Modèles synchronisés avec la base de données.");
 
@@ -42,9 +48,7 @@ const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => {
       console.log(`🚀 Service Inscription démarré sur le port ${PORT}`);
 
-      // -------------------------
       // Enregistrement Eureka
-      // -------------------------
       eurekaClient.start(error => {
         if (error) console.error("❌ Erreur Eureka :", error);
         else console.log("✅ Service enregistré sur Eureka !");

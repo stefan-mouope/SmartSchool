@@ -58,6 +58,12 @@ export const getAllInscriptions = async (): Promise<InscriptionResult[]> => {
   console.log(res.data)
   return res.data;
 };
+export const getInscriptionsByClassRoomId = async (classRoom_id: number): Promise<InscriptionResult[]> => {
+  const res = await api.get<InscriptionResult[]>(`${BASE_INSCRIPTION_SERVICE}/api/inscriptions/class/${classRoom_id}`);
+  console.log(res.data)
+  return res.data;
+};
+
 
 // 🔍 Récupérer une inscription par ID
 export const getInscriptionById = async (id: number): Promise<InscriptionResult> => {

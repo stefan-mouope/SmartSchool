@@ -1,5 +1,7 @@
 import { ClassRoom } from "./classroom.model";
 import { School } from "../school/school.model";
+import axios from "axios";
+import { Sequelize } from "sequelize";
 
 export class ClassRoomService {
   
@@ -48,7 +50,7 @@ export class ClassRoomService {
       include: [
         {
           model: School,
-          as: "school_for_classroom", // <-- alias correct
+          as: "school", // <-- alias correct
         },
       ],
     });
@@ -58,12 +60,56 @@ export class ClassRoomService {
   }
 }
 
+
+//recuperation des classes par niveau
+
+
+// recupere les tous les niveau de la 
+
+async getLevelsBySchool(schoolId: number): Promise<number[]> {
+  try {
+    // console.log("🚀 ~ file: classroom.service.ts:97 ~ ClassRoomService ~ schoolId:", schoolId);
+    const levels = await ClassRoom.findAll({
+      where: { school_id: schoolId },
+      attributes: [
+        [Sequelize.fn("DISTINCT", Sequelize.col("level")), "level"]
+      ],
+      order: [[Sequelize.col("level"), "ASC"]],
+      raw: true, // retourne directement un objet simple
+    });
+
+    // Avec raw:true, on peut accéder directement à level
+    return levels.map((l: any) => l.level);
+  } catch (error) {
+    throw error;
+  }
+}
+
+
+
+ async getLevelsWithTranches(schoolId: number) {
+    // 1️⃣ Récupérer toutes les classes de l'école
+    const classes = await ClassRoom.findAll({
+      where: { school_id: schoolId },
+      attributes: ["id", "name", "level"],
+      raw: true
+    });
+
+    // 2️⃣ Appeler directement le service Tranche
+    const response = await axios.post(
+      "http://localhost:5000/api/tranches/compute-by-level",
+      { classes }
+    );
+
+    // 3️⃣ Retourner au frontend
+    return response.data;
+  }
+
   // Récupérer les classes par niveau
-  async findByLevel(level: string) {
+  async findByLevel(level: number, school_id: number) {
     try {
       const classrooms = await ClassRoom.findAll({
-        where: { level },
-        include: [{ model: School, as: "school" }],
+        where: { level, school_id },
       });
       return classrooms;
     } catch (error) {
