@@ -11,8 +11,15 @@ class Bulletin(models.Model):
     date_creation = models.DateTimeField(default=timezone.now)
 
 class LigneBulletin(models.Model):
-    bulletin = models.ForeignKey(Bulletin, on_delete=models.CASCADE, related_name='lignes')
-    matiere = models.CharField(max_length=255)
-    moyenne = models.FloatField(null=True, blank=True)
-    appreciation = models.CharField(max_length=255, blank=True, default='')
-    sequences = models.JSONField(null=True, blank=True)
+    bulletin = models.ForeignKey('Bulletin', related_name='lignes', on_delete=models.CASCADE)
+    matiere = models.CharField(max_length=150)  # Nom complet de la matière
+    moyenne = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    appreciation = models.CharField(max_length=100, blank=True)
+    sequences = models.JSONField(default=dict, blank=True)  # ← CE CHAMP EST CRUCIAL !
+
+    class Meta:
+        verbose_name = "Ligne de bulletin"
+        verbose_name_plural = "Lignes de bulletin"
+
+    def __str__(self):
+        return f"{self.matiere} - {self.moyenne or '-'}"
