@@ -33,12 +33,9 @@ export const createInscription = async (req, res) => {
     }
 
     // ✅ Création de l'étudiant s'il n'existe pas déjà
-    let nouveauStudent = await Student.findOne({ where: { matricule: student.matricule } });
-
-    if (!nouveauStudent) {
-      nouveauStudent = await Student.create(student);
-      console.log("👤 Nouvel étudiant créé :", nouveauStudent.id);
-    }
+    delete student.matricule;
+    const nouveauStudent = await Student.create(student);
+    console.log("👤 Nouvel étudiant créé :", nouveauStudent.id);
 
     // ✅ Création de l'inscription
     const inscription = await Inscription.create({

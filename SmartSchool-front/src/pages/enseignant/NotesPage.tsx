@@ -1,3 +1,4 @@
+
 // src/pages/NotesPage.tsx
 import React, { useState, useEffect } from 'react';
 import { Upload, Download } from 'lucide-react';
@@ -5,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { getAppreciation, getAppreciationColor } from '@/utils/calculations';
 import { api, BASE_INSCRIPTION_SERVICE, BASE_REGISTRATION} from '@/api/axios';
-import { updateNote, type NotePayload } from '@/api/noteService';
+import { saveOrUpdateNote, updateNote, type NotePayload } from '@/api/noteService';
 
 
 type Note = {
@@ -69,6 +70,48 @@ export const NotesPage: React.FC = () => {
   const [loadingMatieres, setLoadingMatieres] = useState(true);
   const [loadingStudents, setLoadingStudents] = useState(false);
 
+  // --- RESTAURATION / PERSISTENCE localStorage ---
+  useEffect(() => {
+    try {
+      const savedYear = localStorage.getItem("selectedYear");
+      const savedClass = localStorage.getItem("selectedClass");
+      const savedMatiere = localStorage.getItem("selectedMatiere");
+      const savedPeriod = localStorage.getItem("selectedPeriod");
+
+      if (savedYear) setSelectedYear(Number(savedYear));
+      if (savedClass) setSelectedClass(Number(savedClass));
+      if (savedMatiere) setSelectedMatiere(Number(savedMatiere));
+      if (savedPeriod) setSelectedPeriod(savedPeriod);
+    } catch (e) {
+      // localStorage peut échouer en environnement fermé — on ne veut pas casser l'app
+      console.warn("Impossible d'accéder à localStorage :", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      if (selectedYear !== null) localStorage.setItem("selectedYear", String(selectedYear));
+    } catch {}
+  }, [selectedYear]);
+
+  useEffect(() => {
+    try {
+      if (selectedClass !== null) localStorage.setItem("selectedClass", String(selectedClass));
+    } catch {}
+  }, [selectedClass]);
+
+  useEffect(() => {
+    try {
+      if (selectedMatiere !== null) localStorage.setItem("selectedMatiere", String(selectedMatiere));
+    } catch {}
+  }, [selectedMatiere]);
+
+  useEffect(() => {
+    try {
+      if (selectedPeriod) localStorage.setItem("selectedPeriod", selectedPeriod);
+    } catch {}
+  }, [selectedPeriod]);
+
   // 1. Charger années + année courante
   useEffect(() => {
     const loadYears = async () => {
@@ -88,7 +131,9 @@ export const NotesPage: React.FC = () => {
         setYears(formattedYears);
 
         const current = currentRes.data;
-        if (current?.id) {
+        const savedYear = localStorage.getItem("selectedYear");
+        // si l'utilisateur a déjà une sélection sauvegardée, ne pas écraser
+        if (!savedYear && current?.id) {
           setSelectedYear(current.id);
           console.log("Année courante chargée :", formatAcademicYear(current));
         }
@@ -111,7 +156,9 @@ export const NotesPage: React.FC = () => {
         const data = (res.data?.data || res.data || []);
         setClasses(data);
 
-        if (data.length > 0 && !selectedClass) {
+        // si aucune classe sélectionnée (ni via localStorage), choisir la première
+        const savedClass = localStorage.getItem("selectedClass");
+        if (data.length > 0 && !savedClass && !selectedClass) {
           setSelectedClass(data[0].id);
         }
       } catch (err) {
@@ -133,7 +180,8 @@ export const NotesPage: React.FC = () => {
         const data = (res.data?.data || res.data || []);
         setMatieres(data);
 
-        if (data.length > 0 && !selectedMatiere) {
+        const savedMatiere = localStorage.getItem("selectedMatiere");
+        if (data.length > 0 && !savedMatiere && !selectedMatiere) {
           setSelectedMatiere(data[0].id);
         }
       } catch (err) {
@@ -147,154 +195,125 @@ export const NotesPage: React.FC = () => {
   }, []);
 
   // 4. Charger élèves + notes
-useEffect(() => {
-  if (!selectedYear || !selectedClass || !selectedMatiere) {
-    setNotes([]);
-    return;
-  }
-
-  const fetchStudents = async () => {
-    setLoadingStudents(true);
-    try {
-      const res = await api.get(
-        `${BASE_INSCRIPTION_SERVICE}/api/inscriptions/class/${selectedClass}/year/${selectedYear}/students`
-      );
-
-      const students = res.data?.data || [];
-
-      // AJOUTE ÇA : DEBUG COMPLET
-      console.log('Données brutes reçues pour la classe/année :', {
-        selectedClass,
-        selectedYear,
-        selectedMatiere,
-        totalStudents: students.length
-      });
-
-      students.forEach((s: any, index: number) => {
-        console.log(`\n--- Élève ${index + 1} : ${s.student.last_name} ${s.student.first_name} ---`);
-        console.log('Toutes ses notes (toutes matières) :', s.notes);
-
-        const noteTrouvee = (s.notes || []).find((n: any) => 
-          Number(n.id_matiere) === Number(selectedMatiere)
-        );
-
-        console.log('Note trouvée pour la matière sélectionnée (ID:', selectedMatiere, '):', noteTrouvee);
-        if (noteTrouvee) {
-          console.log('→ sequences de cette matière :', noteTrouvee.sequences);
-          console.log('→ note pour la période', selectedPeriod, ':', noteTrouvee.sequences?.[selectedPeriod]);
-        } else {
-          console.log('Aucune note trouvée pour cette matière');
-        }
-      });
-      // FIN DU DEBUG
-
-      const notesData: Note[] = students.map((s: any) => {
-        const noteForMatiere = (s.notes || []).find((n: any) => 
-          Number(n.id_matiere) === Number(selectedMatiere)
-        );
-
-        const value = noteForMatiere?.sequences?.[selectedPeriod] ?? '';
-        const strValue = value != null ? String(value) : '';
-
-        return {
-          id: s.inscription_id,
-          nom: `${s.student.last_name} ${s.student.first_name}`.trim(),
-          matricule: s.student.matricule || 'N/A',
-          note: strValue,
-          interrogation: strValue,
-          appreciation: strValue ? getAppreciation(parseFloat(strValue)) : ''
-        };
-      });
-
-      setNotes(notesData);
-    } catch (err: any) {
-      console.error("Erreur chargement notes :", err);
+  useEffect(() => {
+    if (!selectedYear || !selectedClass || !selectedMatiere) {
       setNotes([]);
-    } finally {
-      setLoadingStudents(false);
+      return;
     }
-  };
 
-  fetchStudents();
-}, [selectedYear, selectedClass, selectedMatiere, selectedPeriod]);
+    const fetchStudents = async () => {
+      setLoadingStudents(true);
+      try {
+        const res = await api.get(
+          `${BASE_INSCRIPTION_SERVICE}/api/inscriptions/class/${selectedClass}/year/${selectedYear}/students`
+        );
 
+        const students = res.data?.data || [];
 
+        // DEBUG léger — utile si tu veux vérifier les données reçues
+        console.debug('Données reçues pour la classe/année/matiere :', {
+          selectedClass,
+          selectedYear,
+          selectedMatiere,
+          totalStudents: students.length
+        });
 
+        const notesData: Note[] = students.map((s: any) => {
+          const noteForMatiere = (s.notes || []).find((n: any) =>
+            Number(n.id_matiere) === Number(selectedMatiere)
+          );
 
+          const value = noteForMatiere?.sequences?.[selectedPeriod] ?? '';
+          const strValue = value != null ? String(value) : '';
 
+          return {
+            id: s.inscription_id,
+            nom: `${s.student.last_name} ${s.student.first_name}`.trim(),
+            matricule: s.student.matricule || 'N/A',
+            note: strValue,
+            interrogation: strValue,
+            appreciation: strValue ? getAppreciation(parseFloat(strValue)) : ''
+          };
+        });
 
+        setNotes(notesData);
+      } catch (err: any) {
+        console.error("Erreur chargement notes :", err);
+        setNotes([]);
+      } finally {
+        setLoadingStudents(false);
+      }
+    };
 
-const [savingCells, setSavingCells] = useState<Set<string>>(new Set());
+    fetchStudents();
+  }, [selectedYear, selectedClass, selectedMatiere, selectedPeriod]);
 
-const handleNoteChange = async (
-  inscriptionId: number,
-  field: 'note' | 'interrogation',
-  value: string
-) => {
-  if (!selectedMatiere) return;
+  const [savingCells, setSavingCells] = useState<Set<string>>(new Set());
 
-  const numericValue = value === '' ? null : parseFloat(value);
-  if (value !== '' && (isNaN(numericValue!) || numericValue! < 0 || numericValue! > 20)) {
-    return; // Optionnel : tu peux afficher un toast d'erreur
-  }
+  const handleNoteChange = async (
+    inscriptionId: number,
+    field: 'note' | 'interrogation',
+    value: string
+  ) => {
+    if (!selectedMatiere) return;
 
-  // Mise à jour optimiste de l'UI
-  setNotes(prev =>
-    prev.map(n =>
-      n.id === inscriptionId
-        ? {
-            ...n,
-            [field]: value,
-            appreciation: value ? getAppreciation(parseFloat(value)) : '',
-          }
-        : n
-    )
-  );
+    const numericValue = value === '' ? null : parseFloat(value);
+    if (value !== '' && (isNaN(numericValue!) || numericValue! < 0 || numericValue! > 20)) {
+      return; // Optionnel : tu peux afficher un toast d'erreur
+    }
 
-  const cellKey = `${inscriptionId}-${selectedPeriod}`;
-  setSavingCells(prev => new Set(prev).add(cellKey));
-
-  // Préparer les données à envoyer selon la période
-  let payload: Partial<NotePayload> = {};
-
-  if (selectedPeriod.startsWith('sequence')) {
-    payload[selectedPeriod as keyof NotePayload] = numericValue;
-  } else if (selectedPeriod.startsWith('trimestre')) {
-    // Si tu veux permettre la saisie manuelle des trimestres (rarement le cas)
-    payload[selectedPeriod as keyof NotePayload] = numericValue;
-  }
-
-  const result = await updateNote(inscriptionId, selectedMatiere, payload);
-
-  // Retirer le loader
-  setSavingCells(prev => {
-    const next = new Set(prev);
-    next.delete(cellKey);
-    return next;
-  });
-
-  // Optionnel : rollback en cas d'échec
-  if (!result.success) {
-    // Remettre l'ancienne valeur (tu peux stocker l'ancienne avant)
+    // Mise à jour optimiste de l'UI
     setNotes(prev =>
       prev.map(n =>
         n.id === inscriptionId
           ? {
               ...n,
-              [field]: '', // ou valeur précédente
-              appreciation: '',
+              [field]: value,
+              appreciation: value ? getAppreciation(parseFloat(value)) : '',
             }
           : n
       )
     );
 
-    // Tu peux ajouter un toast ici
-    alert(result.message || "Erreur lors de la sauvegarde");
-  }
-};
+    const cellKey = `${inscriptionId}-${selectedPeriod}`;
+    setSavingCells(prev => new Set(prev).add(cellKey));
+
+    // Préparer les données à envoyer selon la période
+    let payload: Partial<NotePayload> = {};
+
+    // Note: NotePayload keys are expected to match the backend naming (e.g. sequence1, trimestre1...)
+    payload[selectedPeriod as keyof NotePayload] = numericValue;
+
+    // const result = await updateNote(inscriptionId, selectedMatiere, payload);
+    const result = await saveOrUpdateNote(inscriptionId, selectedMatiere, payload);
 
 
+    // Retirer le loader
+    setSavingCells(prev => {
+      const next = new Set(prev);
+      next.delete(cellKey);
+      return next;
+    });
 
+    // Optionnel : rollback en cas d'échec
+    if (!result.success) {
+      // Remettre l'ancienne valeur (tu peux stocker l'ancienne avant si tu veux rollback exact)
+      setNotes(prev =>
+        prev.map(n =>
+          n.id === inscriptionId
+            ? {
+                ...n,
+                [field]: '', // on vide pour indiquer échec
+                appreciation: '',
+              }
+            : n
+        )
+      );
+
+      // Alerte simple — remplace par ton système de toast si tu en as un
+      alert(result.message || "Erreur lors de la sauvegarde");
+    }
+  };
 
   const calculerMoyenneClasse = (field: 'note' | 'interrogation') => {
     const vals = notes.map(n => parseFloat(n[field] || '0')).filter(v => v > 0);
@@ -332,7 +351,6 @@ const handleNoteChange = async (
               {years.map(year => (
                 <option key={year.id} value={year.id}>
                   {year.displayName || formatAcademicYear(year)}
-                  {year.id === selectedYear}
                 </option>
               ))}
             </select>
@@ -406,7 +424,7 @@ const handleNoteChange = async (
                   {classes.find(c => c.id === selectedClass)?.name} • {matieres.find(m => m.id === selectedMatiere)?.name} • {selectedPeriod.replace('sequence', 'Séquence ').replace('trimestre', 'Trimestre ')}
                 </h3>
                 <p className="text-sm opacity-90 mt-1">
-                  Effectif : {notes.length} élèves • Année : {years.find(y => y.id === selectedYear)?.displayName || formatAcademicYear(years.find(y => y.id === selectedYear)!)}
+                  Effectif : {notes.length} élèves • Année : {years.find(y => y.id === selectedYear)?.displayName || (selectedYear ? formatAcademicYear(years.find(y => y.id === selectedYear) as AcademicYear) : '')}
                 </p>
               </div>
               <div className="flex gap-3">

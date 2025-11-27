@@ -17,8 +17,7 @@ http://localhost:5000/api/inscriptions
 
 {
   "student": {
-    "matricule": "STD2025-001",
-    "last_name": "Doe",
+    "last_name": "Sandh",
     "first_name": "John",
     "birth_date": "2010-05-15",
     "adress": "Yaoundé, Omnisport",

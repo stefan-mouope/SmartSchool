@@ -29,7 +29,7 @@ def api_generer_bulletin(request):
     """
     inscription_id = request.data.get('inscription_id')
     classe_id = request.data.get('classe_id')
-    trimestre = request.data.get('trimestre')
+    trimestre = int(request.data.get('trimestre')) if request.data.get('trimestre') else None
     sequence = request.data.get('sequence')
 
     if not inscription_id or not classe_id:
@@ -63,28 +63,30 @@ def api_generer_bulletin(request):
     bulletin.lignes.all().delete()
 
     for note in notes:
-    # Déterminer les séquences correspondant au trimestre
-        if trimestre == 1:
-            seq_fields = ["sequence1", "sequence2"]
-        elif trimestre == 2:
-            seq_fields = ["sequence3", "sequence4"]
-        elif trimestre == 3:
-            seq_fields = ["sequence5", "sequence6"]
+        if sequence:
+            seq_fields = [f"sequence{sequence}"]
         else:
-            seq_fields = []
+            if trimestre == 1:
+                seq_fields = ["sequence1", "sequence2"]
+            elif trimestre == 2:
+                seq_fields = ["sequence3", "sequence4"]
+            elif trimestre == 3:
+                seq_fields = ["sequence5", "sequence6"]
+            else:
+                seq_fields = []
 
         sequences = {f: getattr(note, f) for f in seq_fields}
         valeurs = [v for v in sequences.values() if v is not None]
 
-        moy_trimestre = sum(valeurs)/len(valeurs) if valeurs else None
-        appreciation = _appreciation(moy_trimestre)
+        moyenne = sum(valeurs) / len(valeurs) if valeurs else None
+        appreciation = _appreciation(moyenne)
 
         LigneBulletin.objects.create(
             bulletin=bulletin,
-            matiere=f"Matiere {note.id_matiere}",
-            moyenne=moy_trimestre or 0.0,
+            matiere=f"Matière {note.id_matiere}",
+            moyenne=moyenne or 0.0,
             appreciation=appreciation,
-            sequences=sequences  # si tu veux retourner ça dans le serializer
+            sequences=sequences
         )
 
 

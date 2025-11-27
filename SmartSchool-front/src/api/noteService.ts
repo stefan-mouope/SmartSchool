@@ -88,3 +88,38 @@ export const updateNote = async (
     };
   }
 };
+
+
+export const saveOrUpdateNote = async (
+  idInscription: number,
+  idMatiere: number,
+  payload: NotePayload
+): Promise<{
+  success: boolean;
+  created: boolean;
+  data?: NoteResponse;
+  message?: string;
+}> => {
+  try {
+    const response = await api.post<NoteResponse>(
+      `${BASE_NOTE_SERVICE}/notes/save/${idInscription}/${idMatiere}/`,
+      payload
+    );
+
+    // Toujours renvoyer un objet avec success et created
+    return {
+      success: true,
+      created: true, // ou false si tu implémentes update côté backend
+      data: response.data,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      created: false,
+      message:
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        "Erreur inconnue lors de la sauvegarde",
+    };
+  }
+};

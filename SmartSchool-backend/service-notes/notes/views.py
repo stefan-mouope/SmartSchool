@@ -6,56 +6,50 @@ from .serializers import NoteSerializer
 from rest_framework.decorators import api_view
 from .rabbitmq import rpc_client as rabbit_client
 
-# -----------------------
-# CREATE NOTE
-# -----------------------
-class CreateNote(APIView):
+
+class SaveNote(APIView):
     def post(self, request, id_inscription, id_matiere):
         try:
+            # Vérifier inscription
             verify_inscription = rabbit_client.call(
                 "inscription.verify",
                 {"event": "verify_inscription", "data": {"id_inscription": id_inscription}}
             )
             if not verify_inscription.get("status"):
-                return Response({"error": "Inscription introuvable"}, status=404)
+                return Response({"success": False, "message": "Inscription introuvable"}, status=404)
 
+            # Vérifier matière
             verify_matiere = rabbit_client.call(
                 "matiere.verify",
                 {"event": "verify_matiere", "data": {"id_matiere": id_matiere}}
             )
             if not verify_matiere.get("status"):
-                return Response({"error": "Matière introuvable"}, status=404)
+                return Response({"success": False, "message": "Matière introuvable"}, status=404)
 
             data = request.data.copy()
             data["id_inscription"] = id_inscription
             data["id_matiere"] = id_matiere
 
-            serializer = NoteSerializer(data=data)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=201)
-            return Response(serializer.errors, status=400)
+            note, created = Note.objects.update_or_create(
+                id_inscription=id_inscription,
+                id_matiere=id_matiere,
+                defaults=data
+            )
+
+            serializer = NoteSerializer(note)
+
+            return Response({
+                "success": True,
+                "created": created,
+                "data": serializer.data
+            }, status=200)
 
         except Exception as e:
-            print("Erreur CreateNote:", e)
-            return Response({"error": str(e)}, status=500)
+            return Response({
+                "success": False,
+                "message": str(e)
+            }, status=500)
 
-
-# -----------------------
-# UPDATE NOTE
-# -----------------------
-class UpdateNote(APIView):
-    def put(self, request, id_inscription, id_matiere):
-        try:
-            note = Note.objects.get(id_inscription=id_inscription, id_matiere=id_matiere)
-        except Note.DoesNotExist:
-            return Response({"error": "Note introuvable"}, status=404)
-
-        serializer = NoteSerializer(note, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=400)
 
 
 # -----------------------
@@ -164,3 +158,20 @@ class FullNotesByInscription(APIView):
             "id_inscription": id_inscription,
             "notes": result
         })
+
+
+class GetSingleNote(APIView):
+    def get(self, request, id_inscription, id_matiere):
+        try:
+            note = Note.objects.get(id_inscription=id_inscription,
+                                    id_matiere=id_matiere)
+            serializer = NoteSerializer(note)
+            return Response({
+                "success": True,
+                "data": serializer.data
+            }, status=200)
+        except Note.DoesNotExist:
+            return Response({
+                "success": False,
+                "message": "Note introuvable"
+            }, status=404)
