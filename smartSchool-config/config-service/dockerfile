@@ -8,7 +8,7 @@ WORKDIR /app
 COPY target/config-service.jar config-service.jar
 
 # Expose le port sur lequel l'application s'exécutera
-EXPOSE 8000
+EXPOSE 8080
 
 # Définit la commande pour lancer l'application au démarrage du conteneur
 ENTRYPOINT ["java", "-jar", "config-service.jar"]
