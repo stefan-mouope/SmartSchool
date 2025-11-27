@@ -151,9 +151,9 @@ export const SchoolCreationForm: React.FC<SchoolFormProps> = ({ isOpen, onCancel
       newErrors.email = 'Email invalide';
     }
 
-    if (!formData.phone_school.trim()) {
+      if (!formData.phone_school.trim()) {
       newErrors.phone_school = 'Le téléphone est requis';
-    } else if (!/^\[0-9]{9}$/.test(formData.phone_school)) {
+    } else if (!/^[0-9]{9}$/.test(formData.phone_school)) {
       newErrors.phone_school = 'Format: 9 chiffres';
     }
 

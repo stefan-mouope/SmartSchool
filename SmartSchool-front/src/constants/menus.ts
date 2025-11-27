@@ -20,9 +20,9 @@ export const menus: Record<UserRole, MenuItem[]> = {
   ],
   enseignant: [
     { id: 'dashboard', label: 'Tableau de bord', icon: Home },
-    { id: 'mes-classes', label: 'Mes Classes', icon: BookOpen },
+    // { id: 'mes-classes', label: 'Mes Classes', icon: BookOpen },
     { id: 'notes', label: 'Saisie des notes', icon: Edit2 },
-    { id: 'bulletins', label: 'Bulletins', icon: FileText }
+    // { id: 'bulletins', label: 'Bulletins', icon: FileText }
   ]
 };
 

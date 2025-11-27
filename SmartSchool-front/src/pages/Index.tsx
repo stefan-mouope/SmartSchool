@@ -82,18 +82,18 @@ const Index = () => {
           return <EnseignantDashboard />;
         case 'notes':
           return <NotesPage />;
-        case 'mes-classes':
-        case 'bulletins':
-          return (
-            <div>
-              <h2 className="text-2xl font-bold text-foreground mb-6">
-                {currentPage === 'mes-classes' ? 'Mes Classes' : currentPage.charAt(0).toUpperCase() + currentPage.slice(1)}
-              </h2>
-              <div className="bg-card rounded-lg shadow-md p-6">
-                <p className="text-muted-foreground">Cette page est en cours de développement...</p>
-              </div>
-            </div>
-          );
+        // case 'mes-classes':
+        // case 'bulletins':
+        //   return (
+        //     <div>
+        //       <h2 className="text-2xl font-bold text-foreground mb-6">
+        //         {currentPage === 'mes-classes' ? 'Mes Classes' : currentPage.charAt(0).toUpperCase() + currentPage.slice(1)}
+        //       </h2>
+        //       <div className="bg-card rounded-lg shadow-md p-6">
+        //         <p className="text-muted-foreground">Cette page est en cours de développement...</p>
+        //       </div>
+        //     </div>
+        //   );
         default:
           return <EnseignantDashboard />;
       }
