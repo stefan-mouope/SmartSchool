@@ -6,8 +6,9 @@ const router = Router();
 const teacherController = new TeacherController();
 
 // Routes CRUD pour Teacher
-// router.post("/", verifyAuth('create_teacher'),(req, res) => teacherController.create(req, res));
-router.post("/",(req, res) => teacherController.create(req, res));
+router.post("/", verifyAuth('create_teacher'),(req, res) => teacherController.create(req, res));
+
+// router.post("/",(req, res) => teacherController.create(req, res));
 router.get("/", (req, res) => teacherController.findAll(req, res));
 router.get("/school/:schoolId", (req, res) => teacherController.findBySchool(req, res));
 router.get("/:id", (req, res) => teacherController.findById(req, res));

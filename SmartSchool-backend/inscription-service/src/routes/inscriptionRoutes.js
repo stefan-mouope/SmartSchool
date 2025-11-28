@@ -16,9 +16,9 @@ import { getStudentsByClassAndYear } from "../controllers/inscriptionController.
 const router = express.Router();
 
 
-// router.post("/", verifyAuth("create_inscription"), createInscription);
+router.post("/", verifyAuth("create_inscription"), createInscription);
 
-router.post("/", createInscription);
+// router.post("/", createInscription);
 router.get("/", getAllInscriptions);
 router.get("/class/:classRoom_id", getInscriptionByClassRoomId);
 router.get("/:id", getInscriptionById);

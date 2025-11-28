@@ -52,7 +52,7 @@ const formatAcademicYear = (year: AcademicYear): string => {
 
 export const NotesPage: React.FC = () => {
   const school_id = useAuthStore(state => state.school_id)
-  const schoolId = school_id; // À remplacer par useAuth().user.schoolId plus tard
+  const schoolId = school_id; 
 
   // États de données
   const [years, setYears] = useState<AcademicYear[]>([]);
