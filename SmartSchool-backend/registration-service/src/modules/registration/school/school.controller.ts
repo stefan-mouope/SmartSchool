@@ -2,19 +2,44 @@ import { Request, Response } from "express";
 import { SchoolService } from "./school.service";
 import { and, where } from "sequelize";
 import { Director, School } from "../models";
+import fs from 'fs';
 
 const schoolService = new SchoolService();
 
 export class SchoolController {
   // Créer une école
-  async create(req: Request, res: Response) {
+  create = async (req: Request, res: Response) => {
     try {
-      const school = await schoolService.create(req.body);
-      res.status(201).json(school);
-    } catch (error: any) {
-      res.status(400).json({ error: error.message });
+    console.log('Body:', req.body);
+    console.log('File:', req.file);
+    
+    if (!req.file) {
+      return res.status(400).json({ message: 'Le logo est requis' });
     }
+    
+    const data = {
+      ...req.body,
+      logo: req.file // Le fichier uploadé par multer
+    };
+    
+    const school = await schoolService.create(data);
+    
+    // Nettoyer le fichier temporaire après upload
+    if (req.file?.path) {
+      fs.unlinkSync(req.file.path);
+    }
+    
+    res.status(201).json(school);
+  } catch (error: any) {
+    // Nettoyer le fichier temporaire en cas d'erreur
+    if (req.file?.path && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    
+    console.error('Erreur création école:', error);
+    res.status(500).json({ message: error.message });
   }
+}
 async findAllSchoolWithoutDirector(req: Request, res: Response) {
   try {
     console.log("test"); // pour vérifier que la fonction est appelée
