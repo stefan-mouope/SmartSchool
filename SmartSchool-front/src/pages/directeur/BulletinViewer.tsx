@@ -73,7 +73,7 @@ const formatAcademicYear = (year: AcademicYear): string => {
 
 export default function BulletinViewer() {
   const school_id= useAuthStore(state =>state.school_id)
-  const schoolId = school_id; // À remplacer plus tard par useAuth().user.schoolId
+  const schoolId = school_id;
 
   // États données
   const [years, setYears] = useState<AcademicYear[]>([]);
