@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BookOpen, TrendingUp, Clock, Users, BarChart3, Award } from 'lucide-react';
 import { api, BASE_NOTE_SERVICE, BASE_REGISTRATION } from "@/api/axios";
+import { useAuthStore } from '@/store/authStore';
 
 interface Note {
   id: number;
@@ -21,7 +22,8 @@ interface Matiere {
 }
 
 const EnseignantDashboard: React.FC = () => {
-  const schoolId = 1; // À remplacer plus tard par useAuth().user.schoolId
+  const school_id = useAuthStore(state => state.school_id)
+  const schoolId = school_id;
 
   const [recentNotes, setRecentNotes] = useState<Note[]>([]);
   const [matieres, setMatieres] = useState<Matiere[]>([]);
