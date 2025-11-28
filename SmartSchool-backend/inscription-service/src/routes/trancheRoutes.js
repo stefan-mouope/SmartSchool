@@ -12,7 +12,7 @@ const router = express.Router();
 // ➕ Créer une tranche
 router.post("/", createTranche);
 
-
+// 🧮 Calculer les tranches par niveau
 router.post("/compute-by-level", computeTranchesByLevelController);
 
 

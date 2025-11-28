@@ -6,13 +6,12 @@ export const createTranche = async (req, res) => {
   try {
     const { tranche_name, amount, school_id } = req.body;
 
-    if (!tranche_name || !amount || !school_id) {
+    if (!tranche_name  || !school_id) {
       return res.status(400).json({ message: "Champs requis manquants" });
     }
 
     const tranche = await Tranche.create({
       tranche_name,
-      amount,
       school_id,
     });
 
@@ -64,7 +63,6 @@ export const deleteTranche = async (req, res) => {
 
 
 
-
 export const computeTranchesByLevelController = async (req, res) => {
   try {
     const classes = req.body.classes;
@@ -81,7 +79,11 @@ export const computeTranchesByLevelController = async (req, res) => {
     // Récupérer toutes les tranches liées aux classes
     const tranches = await ClassRoomTranche.findAll({
       where: { classRoom_id: classIds },
-      include: [{ model: Tranche, as: "Tranche", attributes: ["tranche_name"] }],
+      include: [{ 
+        model: Tranche, 
+        as: "Tranche", 
+        attributes: ["id", "tranche_name"] // ✅ Inclure l'ID
+      }],
       raw: true
     });
 
@@ -95,27 +97,40 @@ export const computeTranchesByLevelController = async (req, res) => {
       }
     }
 
-    // Ajouter les montants dans les bons niveaux + tranches
+    // Ajouter les montants + IDs dans les bons niveaux + tranches
     for (let item of tranches) {
       const classItem = classes.find(c => c.id === item.classRoom_id);
       if (!classItem) continue;
 
       const level = classItem.level;
       const trancheName = item["Tranche.tranche_name"];
+      const trancheId = item["Tranche.id"]; // ✅ Récupérer l'ID
 
       if (!result[level][trancheName]) {
-        result[level][trancheName] = 0;
+        result[level][trancheName] = {
+          id: trancheId,        // ✅ Stocker l'ID
+          amount: 0
+        };
       }
 
-      result[level][trancheName] += item.amount;
+      result[level][trancheName].amount += item.amount;
     }
 
-    // Convertir l’objet en tableau
-    const formatted = Object.entries(result).map(([level, tranches]) => ({
-      level: Number(level),
-      tranches
-    }));
+    // Convertir l'objet en tableau avec structure claire
+    const formatted = Object.entries(result).map(([level, tranches]) => {
+      // Transformer les tranches en format plus utilisable
+      const tranchesFormatted = Object.entries(tranches).reduce((acc, [name, data]) => {
+        acc[name] = data; // {id: X, amount: Y}
+        return acc;
+      }, {});
 
+      return {
+        level: Number(level),
+        tranches: tranchesFormatted
+      };
+    });
+
+    console.log("Résultat formaté des tranches par niveau :", formatted);
     return res.json({
       status: true,
       data: formatted
@@ -126,4 +141,3 @@ export const computeTranchesByLevelController = async (req, res) => {
     return res.status(500).json({ message: "Erreur serveur", error: error.message });
   }
 };
-

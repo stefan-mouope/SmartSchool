@@ -18,16 +18,18 @@ import { ClassesPage } from './directeur/ClassesPage';
 import { Sub } from '@radix-ui/react-context-menu';
 import { SubjectsPage } from './directeur/SubjectsPage';
 import { TranchesPage } from './directeur/TranchesPage';
-
+import { useAuthStore } from '@/store/authStore';
 const Index = () => {
-  const [currentUser, setCurrentUser] = useState<UserRole>('directeur');
+  // const [currentUser, setCurrentUser] = useState<UserRole>('directeur');
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('');
 
+  const currentUser = useAuthStore(state => state.user.role);
+
   const renderPage = () => {
     // Super user pages
-    if (currentUser === 'super') {
+    if (currentUser === 'superuser') {
       switch (currentPage) {
         case 'dashboard':
           return <SuperDashboard  />;
@@ -102,10 +104,10 @@ const Index = () => {
     return null;
   };
 
-  const handleUserChange = (newUser: UserRole) => {
-    setCurrentUser(newUser);
-    setCurrentPage('dashboard'); // Reset to dashboard when switching users
-  };
+  // const handleUserChange = (newUser: UserRole) => {
+  //   setCurrentUser(newUser);
+  //   setCurrentPage('dashboard'); // Reset to dashboard when switching users
+  // };
 
   return (
     <>
@@ -113,7 +115,7 @@ const Index = () => {
         currentUser={currentUser}
         currentPage={currentPage}
         onPageChange={setCurrentPage}
-        onUserChange={handleUserChange}
+        // onUserChange={handleUserChange}
       >
         {renderPage()}
       </MainLayout>

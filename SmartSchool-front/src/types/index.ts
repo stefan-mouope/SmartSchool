@@ -1,4 +1,4 @@
-export type UserRole = 'super' | 'directeur' | 'enseignant';
+export type UserRole = 'superuser' | 'directeur' | 'enseignant';
 
 export interface MenuItem {
   id: string;

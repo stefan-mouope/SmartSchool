@@ -11,10 +11,7 @@ const Tranche = sequelize.define("Tranche", {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  amount: {
-    type: DataTypes.FLOAT,
-    allowNull: false,
-  },
+ 
   school_id: {
     type: DataTypes.INTEGER,
     allowNull: false,

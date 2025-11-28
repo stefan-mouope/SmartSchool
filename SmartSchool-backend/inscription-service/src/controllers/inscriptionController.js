@@ -67,7 +67,7 @@ export const getAllInscriptions = async (req, res) => {
         {
           model: Tranche,
           as: "tranches_payees",
-          attributes: ["id", "tranche_name", "amount"],
+          attributes: ["id", "tranche_name"],
           through: { attributes: [] }, // ne renvoie pas la table pivot
         },
       ],

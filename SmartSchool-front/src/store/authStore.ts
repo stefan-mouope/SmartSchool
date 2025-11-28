@@ -12,7 +12,7 @@ import {
 
 import { registerAuthInterceptors } from "../api/axios";
 import { getDirectorById } from "@/api/registration-service/director.api";
-import { getTeacherById } from "@/api/registration-service/teache.api";
+import { getTeacherById } from "@/api/registration-service/teacher.api";
 import { getAcademicYearBySchoolId } from "@/api/registration-service/academicYear.api";
 
 interface AuthState {

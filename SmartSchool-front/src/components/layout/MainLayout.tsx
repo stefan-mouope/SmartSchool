@@ -18,7 +18,7 @@ export const MainLayout: React.FC<MainLayoutPropsWithUserChange> = ({
   currentUser, 
   currentPage, 
   onPageChange, 
-  onUserChange,
+  // onUserChange,
   children 
 }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -32,12 +32,12 @@ export const MainLayout: React.FC<MainLayoutPropsWithUserChange> = ({
         isOpen={sidebarOpen}
       />
       <div className={`transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
-        <Header 
+        {/* <Header 
           sidebarOpen={sidebarOpen} 
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
           currentUser={currentUser}
-          onUserChange={onUserChange}
-        />
+          // onUserChange={onUserChange}
+        /> */}
         <main className="pt-16 p-6">
           {children}
         </main>

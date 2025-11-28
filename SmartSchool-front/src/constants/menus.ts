@@ -2,7 +2,7 @@ import { Home, School, Users, GraduationCap, BookOpen, FileText, DollarSign, Cal
 import { UserRole, MenuItem } from '@/types';
 
 export const menus: Record<UserRole, MenuItem[]> = {
-  super: [
+  superuser: [
     { id: 'dashboard', label: 'Tableau de bord', icon: Home },
     { id: 'etablissements', label: 'Établissements', icon: School },
     { id: 'directeurs', label: 'Directeurs', icon: Users }

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { TeacherService } from "./teacher.service";
 import { publishDynamiqueEvent } from "../events/rabbitmq";
+import { Director } from "../models";
 
 const teacherService = new TeacherService();
 
@@ -11,6 +12,7 @@ export class TeacherController {
       // Générer automatiquement le username
       const username = `${req.body.first_name.toLowerCase()}.${req.body.last_name.toLowerCase()}`;
       const newTeacher = await teacherService.create(req.body);
+      const existingDirector = await Director.findOne({ where: {id: newTeacher?.id } });
 
       // Préparer le payload pour Django
       const payload = {

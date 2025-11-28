@@ -98,19 +98,19 @@ export const TrancheCreationForm: React.FC<Props> = ({
       newErrors.tranche_name = "Le nom de la tranche est requis";
     }
     
-    if (!formData.amount.trim()) {
-      newErrors.amount = "Le montant par défaut est requis";
-    } else if (parseFloat(formData.amount) <= 0) {
-      newErrors.amount = "Le montant doit être supérieur à 0";
-    }
+    // if (!formData.amount.trim()) {
+    //   newErrors.amount = "Le montant par défaut est requis";
+    // } else if (parseFloat(formData.amount) <= 0) {
+    //   newErrors.amount = "Le montant doit être supérieur à 0";
+    // }
 
     // Vérifier que tous les niveaux sélectionnés ont un montant valide
-    selectedLevels.forEach(level => {
-      const amount = levelAmounts[level];
-      if (!amount || parseFloat(amount) <= 0) {
-        newErrors[`level_${level}`] = "Montant invalide";
-      }
-    });
+    // selectedLevels.forEach(level => {
+    //   const amount = levelAmounts[level];
+    //   if (!amount || parseFloat(amount) <= 0) {
+    //     newErrors[`level_${level}`] = "Montant invalide";
+    //   }
+    // });
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -191,7 +191,7 @@ export const TrancheCreationForm: React.FC<Props> = ({
             />
           </FormField>
 
-          <FormField label="Montant par défaut (FCFA)" error={errors.amount}>
+          {/* <FormField label="Montant par défaut (FCFA)" error={errors.amount}>
             <Input
               name="amount"
               type="text"
@@ -200,18 +200,18 @@ export const TrancheCreationForm: React.FC<Props> = ({
               onChange={handleChange}
               disabled={isSubmitting}
             />
-          </FormField>
+          </FormField> */}
 
           {/* Sélection des niveaux */}
-          <div className="border rounded-lg p-4 space-y-3">
+          {/* <div className="border rounded-lg p-4 space-y-3">
             <label className="font-medium text-sm">
               Associer aux niveaux (optionnel)
             </label>
             <p className="text-xs text-muted-foreground">
               Vous pouvez définir des montants différents par niveau
-            </p>
+            </p> */}
             
-            <div className="space-y-2 max-h-60 overflow-y-auto">
+            {/* <div className="space-y-2 max-h-60 overflow-y-auto">
               {levels.map((levelData) => (
                 <div key={levelData.level} className="flex items-start gap-3 p-2 border rounded">
                   <input
@@ -244,7 +244,7 @@ export const TrancheCreationForm: React.FC<Props> = ({
                 </div>
               ))}
             </div>
-          </div>
+          </div> */}
 
           <div className="flex justify-end gap-3 mt-6">
             <Button variant="outline" onClick={onCancel} disabled={isSubmitting}>

@@ -4,6 +4,7 @@ import { BASE_REGISTRATION } from "../axios";
 export interface ClassTypeResponse {
   id: number;
   name: string;
+  level: number;
   school_id: number;
   school: {
     id: number;
@@ -22,8 +23,8 @@ export const getClassroomsBySchool = async (schoolId: number):Promise<ClassTypeR
   return response.data;
 }
 
-export const getClassroomById = async (id: number):Promise<{id:number; name:string; school_id:number;}>  => {
-  const response = await api.get<{id:number; name:string; school_id:number;}>(`${BASE_REGISTRATION}/api/classrooms/${id}`);
+export const getClassroomById = async (id: number):Promise<{id:number; name:string;level:number; school_id:number;}>  => {
+  const response = await api.get<{id:number; name:string;level:number ;school_id:number;}>(`${BASE_REGISTRATION}/api/classrooms/${id}`);
   return response.data;
 }
 

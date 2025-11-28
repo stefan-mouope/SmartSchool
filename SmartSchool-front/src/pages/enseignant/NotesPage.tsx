@@ -34,6 +34,7 @@ type Matiere = { id: number; name: string };
 
 // Fonction pour formater proprement l'année scolaire
 const formatAcademicYear = (year: AcademicYear): string => {
+  console.log(year)
   if (year.name) return year.name;
   if (year.label) return year.label;
 

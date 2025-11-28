@@ -1,149 +1,3 @@
-// import React, { useEffect, useState } from "react";
-// import { Plus } from "lucide-react";
-// import { DataTable } from "@/components/shared/DataTable";
-// import { TableSkeleton } from "@/components/shared/SkeletonLoading";
-// import { TrancheResult, getTranchesBySchool } from "@/api/tranche.api";
-// import { TrancheCreationForm } from "@/components/forms/TrancheCreationForm";
-// import { useAuthStore } from "@/store/authStore";
-
-// export const TranchesPage: React.FC = () => {
-//   const [showModal, setShowModal] = useState(false);
-//   const [tranches, setTranches] = useState<TrancheResult[]>([]);
-//   const [isLoading, setIsLoading] = useState(true);
-//   const [error, setError] = useState<string | null>(null);
-  
-//   const school_id = useAuthStore(state => state.school_id);
-
-//   const columns = [
-//     {
-//       key: "tranche_name",
-//       label: "Nom de la tranche",
-//       align: "left" as const,
-//       render: (value: string, row: TrancheResult) => (
-//         <span className="font-medium">{row.tranche_name}</span>
-//       ),
-//     },
-//     {
-//       key: "amount",
-//       label: "Montant",
-//       align: "right" as const,
-//       render: (value: number, row: TrancheResult) => (
-//         <span className="font-semibold text-primary">
-//           {new Intl.NumberFormat('fr-FR', {
-//             style: 'currency',
-//             currency: 'XOF',
-//             minimumFractionDigits: 0,
-//           }).format(row.amount)}
-//         </span>
-//       ),
-//     },
-//     {
-//       key: "created_at",
-//       label: "Date de création",
-//       align: "left" as const,
-//       render: (value: string, row: TrancheResult) => (
-//         <span className="text-muted-foreground">
-//           {row.created_at 
-//             ? new Date(row.created_at).toLocaleDateString('fr-FR', {
-//                 day: '2-digit',
-//                 month: 'long',
-//                 year: 'numeric'
-//               })
-//             : "—"
-//           }
-//         </span>
-//       ),
-//     },
-//   ];
-
-//   const fetchTranches = async () => {
-//     try {
-//       setIsLoading(true);
-//       setError(null);
-//       const data = await getTranchesBySchool(Number(school_id));
-//       setTranches(data);
-//     } catch (error) {
-//       console.error("Erreur lors du chargement des tranches:", error);
-//       setError("Impossible de charger les tranches. Veuillez réessayer.");
-//     } finally {
-//       setIsLoading(false);
-//     }
-//   };
-
-//   useEffect(() => {
-//     fetchTranches();
-//   }, [school_id]);
-
-//   // Calculer le total des montants
-//   const totalAmount = tranches.reduce((sum, tranche) => sum + tranche.amount, 0);
-
-//   return (
-//     <div>
-//       <h2 className="text-2xl font-bold text-foreground mb-6">
-//         Gestion des Tranches de Paiement
-//       </h2>
-
-//       <div className="bg-card rounded-lg shadow-md">
-//         <div className="p-6 border-b border-border flex justify-between items-center">
-//           <div>
-//             <h3 className="text-lg font-semibold text-card-foreground">
-//               Liste des tranches
-//             </h3>
-//             {!isLoading && (
-//               <div className="mt-1 space-y-1">
-//                 <p className="text-sm text-muted-foreground">
-//                   {tranches.length} tranche{tranches.length > 1 ? "s" : ""} enregistrée{tranches.length > 1 ? "s" : ""}
-//                 </p>
-//                 {tranches.length > 0 && (
-//                   <p className="text-sm font-medium text-primary">
-//                     Total: {new Intl.NumberFormat('fr-FR', {
-//                       style: 'currency',
-//                       currency: 'XOF',
-//                       minimumFractionDigits: 0,
-//                     }).format(totalAmount)}
-//                   </p>
-//                 )}
-//               </div>
-//             )}
-//           </div>
-//           <button
-//             onClick={() => setShowModal(true)}
-//             className="flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-//           >
-//             <Plus size={20} className="mr-2" />
-//             Ajouter une tranche
-//           </button>
-//         </div>
-
-//         {isLoading ? (
-//           <TableSkeleton rows={5} columns={3} />
-//         ) : error ? (
-//           <div className="p-8 text-center text-destructive">{error}</div>
-//         ) : tranches.length === 0 ? (
-//           <div className="p-8 text-center text-muted-foreground">
-//             <p className="text-lg font-medium mb-2">Aucune tranche enregistrée</p>
-//             <p className="text-sm">Commencez par ajouter une première tranche de paiement</p>
-//           </div>
-//         ) : (
-//           <DataTable columns={columns} data={tranches} />
-//         )}
-//       </div>
-
-//       <TrancheCreationForm
-//         isOpen={showModal}
-//         onCancel={() => setShowModal(false)}
-//         onSuccess={() => {
-//           setShowModal(false);
-//           fetchTranches();
-//         }}
-//       />
-//     </div>
-//   );
-// };
-
-// Extended TranchesPage with button + modal for editing tranche amounts per level
-// (Structure only — ready for customization)
-
 import React, { useEffect, useState } from "react";
 import { Plus, Table } from "lucide-react";
 import { DataTable } from "@/components/shared/DataTable";
@@ -170,7 +24,8 @@ export const TranchesPage: React.FC = () => {
 
   const school_id = useAuthStore((state) => state.school_id);
 
-  const columns = [
+  // Colonnes compactes (tranches et montants séparés par des virgules)
+  const compactColumns = [
     {
       key: "level",
       label: "Niveau",
@@ -184,7 +39,7 @@ export const TranchesPage: React.FC = () => {
       label: "Tranches",
       align: "left",
       render: (value, row) => {
-        const trancheNames = Object.keys(row.tranches);
+        const trancheNames = Object.keys(row.tranches || {});
         return trancheNames.length > 0 ? (
           <span className="text-sm">{trancheNames.join(", ")}</span>
         ) : (
@@ -197,11 +52,12 @@ export const TranchesPage: React.FC = () => {
       label: "Montants",
       align: "left",
       render: (value, row) => {
-        const montants = Object.values(row.tranches);
+        const tranchesObj = row.tranches || {};
+        const montants = Object.values(tranchesObj).map((data: any) => data.amount);
         return montants.length > 0 ? (
           <span className="font-medium">
             {montants
-              .map((amount) => `${amount.toLocaleString("fr-FR")} XOF`)
+              .map((amount) => `${amount.toLocaleString("fr-FR")} XAF`)
               .join(", ")}
           </span>
         ) : (
@@ -210,6 +66,74 @@ export const TranchesPage: React.FC = () => {
       },
     },
   ];
+
+  // Colonnes détaillées (une ligne par tranche avec ID)
+  const detailedColumns = [
+    {
+      key: "level",
+      label: "Niveau",
+      align: "left",
+      render: (value, row) => (
+        <span className="font-medium text-lg">Niveau {row.level ?? "Non défini"}</span>
+      ),
+    },
+    {
+      key: "tranches",
+      label: "Détails des Tranches",
+      align: "left",
+      render: (value, row) => {
+        const tranchesObj = row.tranches || {};
+        const trancheEntries = Object.entries(tranchesObj);
+        
+        return trancheEntries.length > 0 ? (
+          <div className="space-y-2 py-2">
+            {trancheEntries.map(([trancheName, data]: [string, any]) => (
+              <div key={data.id} className="flex items-center gap-4 bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                <span className="text-sm font-medium text-muted-foreground min-w-[100px]">
+                  {trancheName}
+                </span>
+                <span className="text-sm font-semibold text-primary">
+                  {new Intl.NumberFormat('fr-FR', {
+                    style: 'currency',
+                    currency: 'XAF',
+                    minimumFractionDigits: 0,
+                  }).format(data.amount)}
+                </span>
+              
+              </div>
+            ))}
+          </div>
+        ) : (
+          <span className="text-sm text-muted-foreground">Aucune tranche</span>
+        );
+      },
+    },
+    {
+      key: "total",
+      label: "Total",
+      align: "right",
+      render: (value, row) => {
+        const tranchesObj = row.tranches || {};
+        const total = Object.values(tranchesObj).reduce(
+          (sum: number, data: any) => sum + (data.amount || 0),
+          0
+        );
+        
+        return (
+          <span className="font-bold text-lg text-primary">
+            {new Intl.NumberFormat('fr-FR', {
+              style: 'currency',
+              currency: 'XAF',
+              minimumFractionDigits: 0,
+            }).format(total)}
+          </span>
+        );
+      },
+    },
+  ];
+
+  // Choisir les colonnes selon le mode d'affichage
+  const columns = showLevels ? detailedColumns : compactColumns;
 
   const fetchLevels = async () => {
     try {
@@ -254,33 +178,25 @@ export const TranchesPage: React.FC = () => {
           <Plus size={20} className="mr-2" /> Associer un niveau à une tranche
         </Button>
 
-
-
         <button
           onClick={() => setShowLevels((prev) => !prev)}
-          className="flex items-center px-4 py-2 bg-secondary text-secondary-foreground rounded-lg"
+          className="flex items-center px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/90 transition-colors"
         >
-          <Table className="mr-2" size={18} /> Voir tranches par niveau
+          <Table className="mr-2" size={18} /> 
+          {showLevels ? "Affichage compact" : "Affichage détaillé"}
         </button>
-
-        {/* <button
-          onClick={() => setShowEditModal(true)}
-          className="flex items-center px-4 py-2 bg-primary/80 text-white rounded-lg"
-        >
-          Modifier les montants par niveau
-        </button> */}
       </div>
-
-      {showLevels && <LevelsTranchesTable data={levelsData} />}
 
       <div className="bg-card rounded-lg shadow-md">
         <div className="p-6 border-b flex justify-between items-center">
           <div>
-            <h3 className="text-lg font-semibold">Liste des tranches</h3>
+            <h3 className="text-lg font-semibold">
+              {showLevels ? "Vue détaillée par niveau" : "Liste des tranches"}
+            </h3>
             {!isLoading && (
               <>
                 <p className="text-sm text-muted-foreground">
-                  {levelsData.length} niveau(x)
+                  {levelsData.length} niveau{levelsData.length > 1 ? "x" : ""}
                 </p>
               </>
             )}
@@ -308,7 +224,7 @@ export const TranchesPage: React.FC = () => {
           fetchLevels();
         }}
       />
-       <AssociateLevelTrancheForm
+      <AssociateLevelTrancheForm
         isOpen={showAssociateLevelTrancheForm}
         onCancel={() => setShowAssociateLevelTrancheForm(false)}
         onSuccess={() => {
@@ -316,13 +232,6 @@ export const TranchesPage: React.FC = () => {
           fetchLevels();
         }}
       />
-
-      {/* <EditTrancheByLevelModal
-        isOpen={showEditModal}
-        onClose={() => setShowEditModal(false)}
-        levelsData={levelsData}
-        onRefresh={fetchLevels}
-      /> */}
     </div>
   );
 };
