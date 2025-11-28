@@ -122,14 +122,14 @@ USE_I18N = True
 USE_TZ = True
 
 
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:8081",
-#     "http://127.0.0.1:8081",
-# ]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8081",
+    "http://127.0.0.1:8081",
+]
 
-# CORS_ALLOW_CREDENTIALS = True
-
-
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = []
+CORS_ALLOW_CREDENTIALS = False
 # ALLOWED_HOSTS = [
 #     "localhost",
 #     "127.0.0.1",
@@ -139,7 +139,7 @@ USE_TZ = True
 # ]
 
 # OU encore plus propre en 2025 (recommandé)
-# ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "*").split(",")
+ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "*").split(",")
 
 
 # Static files (CSS, JavaScript, Images)
