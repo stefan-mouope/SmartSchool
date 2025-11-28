@@ -10,7 +10,7 @@ import { genererBulletin} from '@/api/bulletins';
 import { BulletinTemplate } from './BulletinTemplate';
 import { exporterBulletinPDF } from '@/utils/pdfExport';
 import { generateClassBulletinsZip } from '@/api/generateClassBulletins';
-
+import { useAuthStore } from '@/store/authStore';
 
 
 type AcademicYear = {
@@ -72,7 +72,8 @@ const formatAcademicYear = (year: AcademicYear): string => {
 };
 
 export default function BulletinViewer() {
-  const schoolId = 1; // À remplacer plus tard par useAuth().user.schoolId
+  const school_id= useAuthStore(state =>state.school_id)
+  const schoolId = school_id; // À remplacer plus tard par useAuth().user.schoolId
 
   // États données
   const [years, setYears] = useState<AcademicYear[]>([]);

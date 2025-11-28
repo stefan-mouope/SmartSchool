@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BookOpen, TrendingUp, Clock, Users, BarChart3, Award } from 'lucide-react';
-import { api, BASE_NOTE_SERVICE, BASE_REGISTRATION } from "@/api/axios";
+import { api, BASE_NOTE_SERVICE, BASE_REGISTRATION, BASE_INSCRIPTION_SERVICE } from "@/api/axios";
+import { useAuthStore } from '@/store/authStore';
 
 interface Note {
   id: number;
@@ -21,7 +22,7 @@ interface Matiere {
 }
 
 const EnseignantDashboard: React.FC = () => {
-  const schoolId = 1; // À remplacer plus tard par useAuth().user.schoolId
+  const schoolId = 1;
 
   const [recentNotes, setRecentNotes] = useState<Note[]>([]);
   const [matieres, setMatieres] = useState<Matiere[]>([]);
@@ -29,7 +30,13 @@ const EnseignantDashboard: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [loadingMatieres, setLoadingMatieres] = useState(true);
 
-  // Charger les matières de l'école (ou mieux : celles assignées à l'enseignant)
+  // 🆕 États pour les élèves
+  const [students, setStudents] = useState<any[]>([]);
+  const [studentMap, setStudentMap] = useState<Record<number, string>>({});
+
+  // --------------------------------------------------------------------
+  // 1️⃣ Charger les matières
+  // --------------------------------------------------------------------
   useEffect(() => {
     const loadMatieres = async () => {
       try {
@@ -38,10 +45,8 @@ const EnseignantDashboard: React.FC = () => {
         const data = (res.data?.data || res.data || []) as Matiere[];
         setMatieres(data);
 
-        // Sélectionner automatiquement la première matière
-        if (data.length > 0) {
-          setSelectedMatiere(data[0].id);
-        }
+        if (data.length > 0) setSelectedMatiere(data[0].id);
+
       } catch (err) {
         console.error("Erreur chargement des matières :", err);
         setMatieres([]);
@@ -53,7 +58,46 @@ const EnseignantDashboard: React.FC = () => {
     loadMatieres();
   }, []);
 
-  // Charger les notes quand la matière change
+  // --------------------------------------------------------------------
+  // 2️⃣ Charger les élèves en fonction de la classe & année (exemple : 1/1)
+  // --------------------------------------------------------------------
+
+  const selectedClass = 1; // à remplacer si tu as les vrais
+  const selectedYear = 1;
+
+  useEffect(() => {
+    if (!selectedMatiere) return;
+
+    const fetchStudents = async () => {
+      try {
+        const res = await api.get(
+          `${BASE_INSCRIPTION_SERVICE}/api/inscriptions/class/${selectedClass}/year/${selectedYear}/students`
+        );
+
+        const list = res.data?.data || [];
+        setStudents(list);
+
+        // dictionnaire inscription_id → "Nom Prénom"
+        const map: Record<number, string> = {};
+        list.forEach((s: any) => {
+          map[s.inscription_id] = `${s.student.last_name} ${s.student.first_name}`;
+        });
+
+        setStudentMap(map);
+
+      } catch (err) {
+        console.error("Erreur chargement élèves :", err);
+        setStudents([]);
+        setStudentMap({});
+      }
+    };
+
+    fetchStudents();
+  }, [selectedMatiere]);
+
+  // --------------------------------------------------------------------
+  // 3️⃣ Charger les notes d’une matière
+  // --------------------------------------------------------------------
   const fetchRecentNotes = async () => {
     if (!selectedMatiere) return;
 
@@ -63,10 +107,12 @@ const EnseignantDashboard: React.FC = () => {
         `${BASE_NOTE_SERVICE}/notes/matiere/${selectedMatiere}/`
       );
       const sorted = response.data.sort((a, b) => b.id - a.id);
-      setRecentNotes(sorted.slice(0, 20)); // On prend un peu plus pour plus de données
+      setRecentNotes(sorted.slice(0, 20));
+
     } catch (err) {
       console.error('Erreur lors du chargement des notes:', err);
       setRecentNotes([]);
+
     } finally {
       setLoading(false);
     }
@@ -76,6 +122,9 @@ const EnseignantDashboard: React.FC = () => {
     fetchRecentNotes();
   }, [selectedMatiere]);
 
+  // --------------------------------------------------------------------
+  // 4️⃣ Fonctions de calcul
+  // --------------------------------------------------------------------
   const calculateTrimestre = (seq1: number, seq2: number) => {
     return ((seq1 + seq2) / 2).toFixed(2);
   };
@@ -89,7 +138,7 @@ const EnseignantDashboard: React.FC = () => {
 
   const calculateStats = () => {
     if (recentNotes.length === 0) return { moyenne: 0, min: 0, max: 0, total: 0 };
-    
+
     const moyennes = recentNotes.map(note => parseFloat(calculateMoyenneGenerale(note)));
     return {
       moyenne: (moyennes.reduce((a, b) => a + b, 0) / moyennes.length).toFixed(2),
@@ -109,9 +158,13 @@ const EnseignantDashboard: React.FC = () => {
 
   const currentMatiereName = matieres.find(m => m.id === selectedMatiere)?.name || "Matière";
 
+  // --------------------------------------------------------------------
+  // 5️⃣ RENDER (UI)
+  // --------------------------------------------------------------------
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-6">
       <div className="max-w-7xl mx-auto">
+
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between flex-wrap gap-4">
@@ -132,7 +185,7 @@ const EnseignantDashboard: React.FC = () => {
                 ) : (
                   <select
                     value={selectedMatiere || ''}
-                    onChange={(e) => setSelectedMatiere(Number(e.target.value) || null  )}
+                    onChange={(e) => setSelectedMatiere(Number(e.target.value) || null)}
                     className="font-bold text-lg border-none focus:outline-none bg-transparent w-full"
                   >
                     <option value="" disabled>Sélectionner une matière</option>
@@ -148,7 +201,7 @@ const EnseignantDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Statistics Cards */}
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
             <Users className="w-8 h-8 opacity-80 mb-3" />
@@ -175,26 +228,21 @@ const EnseignantDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Titre du tableau avec le nom de la matière */}
+        {/* Tableau */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Clock className="w-6 h-6 text-white" />
-                <h2 className="text-2xl font-bold text-white">
-                  Notes Récentes — {currentMatiereName}
-                </h2>
-              </div>
-              <button
-                onClick={fetchRecentNotes}
-                className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-              >
-                Actualiser
-              </button>
-            </div>
+          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 flex justify-between items-center">
+            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+              <Clock className="w-6 h-6" />
+              Notes Récentes — {currentMatiereName}
+            </h2>
+            <button
+              onClick={fetchRecentNotes}
+              className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+            >
+              Actualiser
+            </button>
           </div>
 
-          {/* Contenu du tableau */}
           {loading ? (
             <div className="text-center py-12">
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
@@ -211,13 +259,14 @@ const EnseignantDashboard: React.FC = () => {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">ID Note</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Élève (Inscription)</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Élève</th>
                     <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700">T1</th>
                     <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700">T2</th>
                     <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700">T3</th>
                     <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700">Moy. Gén.</th>
                   </tr>
                 </thead>
+
                 <tbody className="divide-y divide-gray-200">
                   {recentNotes.map((note) => {
                     const t1 = calculateTrimestre(note.sequence1, note.sequence2);
@@ -232,9 +281,17 @@ const EnseignantDashboard: React.FC = () => {
                             {note.id}
                           </span>
                         </td>
+
+                        {/* 🧑‍🎓 Affichage NOM Prénom */}
                         <td className="px-6 py-4">
-                          <p className="font-medium text-gray-900">Inscription #{note.id_inscription}</p>
+                          <p className="font-medium text-gray-900">
+                            {studentMap[note.id_inscription]
+                              ? studentMap[note.id_inscription]
+                              : `Inscription #${note.id_inscription}`}
+                          </p>
                         </td>
+
+                        {/* T1 */}
                         <td className="px-6 py-4 text-center">
                           <div className={`inline-block px-3 py-1 rounded-full font-semibold ${getColorForNote(parseFloat(t1))}`}>
                             {t1}
@@ -243,6 +300,8 @@ const EnseignantDashboard: React.FC = () => {
                             {note.sequence1} • {note.sequence2}
                           </div>
                         </td>
+
+                        {/* T2 */}
                         <td className="px-6 py-4 text-center">
                           <div className={`inline-block px-3 py-1 rounded-full font-semibold ${getColorForNote(parseFloat(t2))}`}>
                             {t2}
@@ -251,6 +310,8 @@ const EnseignantDashboard: React.FC = () => {
                             {note.sequence3} • {note.sequence4}
                           </div>
                         </td>
+
+                        {/* T3 */}
                         <td className="px-6 py-4 text-center">
                           <div className={`inline-block px-3 py-1 rounded-full font-semibold ${getColorForNote(parseFloat(t3))}`}>
                             {t3}
@@ -259,46 +320,23 @@ const EnseignantDashboard: React.FC = () => {
                             {note.sequence5} • {note.sequence6}
                           </div>
                         </td>
+
+                        {/* Moyenne générale */}
                         <td className="px-6 py-4 text-center">
                           <div className={`inline-block px-4 py-2 rounded-lg font-bold text-lg ${getColorForNote(parseFloat(moyGen))}`}>
                             {moyGen}
                           </div>
                         </td>
+
                       </tr>
                     );
                   })}
                 </tbody>
+
               </table>
             </div>
           )}
         </div>
-
-        {/* Stats rapides */}
-        {recentNotes.length > 0 && (
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white rounded-lg shadow p-4 border-l-4 border-green-500">
-              <p className="text-sm text-gray-600 mb-1">≥ 15/20</p>
-              <p className="text-2xl font-bold text-green-600">
-                {recentNotes.filter(n => parseFloat(calculateMoyenneGenerale(n)) >= 15).length}
-              </p>
-            </div>
-            <div className="bg-white rounded-lg shadow p-4 border-l-4 border-yellow-500">
-              <p className="text-sm text-gray-600 mb-1">10–14.99/20</p>
-              <p className="text-2xl font-bold text-yellow-600">
-                {recentNotes.filter(n => {
-                  const moy = parseFloat(calculateMoyenneGenerale(n));
-                  return moy >= 10 && moy < 15;
-                }).length}
-              </p>
-            </div>
-            <div className="bg-white rounded-lg shadow p-4 border-l-4 border-red-500">
-              <p className="text-sm text-gray-600 mb-1">Less than 10/20</p>
-              <p className="text-2xl font-bold text-red-600">
-                {recentNotes.filter(n => parseFloat(calculateMoyenneGenerale(n)) < 10).length}
-              </p>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
