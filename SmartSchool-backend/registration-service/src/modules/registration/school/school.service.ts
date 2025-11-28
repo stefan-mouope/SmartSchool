@@ -3,6 +3,7 @@ import { ClassRoom } from "../classroom/classroom.model";
 import { Transaction } from "sequelize";
 import { AcademicYear, Matter } from "../models";
 import sequelize from "../../../config/database"; 
+import cloudinary from "../../../config/cloudinary";
 
 export class SchoolService {
   private defaultClasses = ["SIL", "CP", "CE1", "CE2", "CM1", "CM2"];
@@ -26,56 +27,68 @@ export class SchoolService {
   }
 
   // ➤ Créer une école + classes + matières + année scolaire
-  async create(data: any) {
-    const transaction: Transaction = await sequelize.transaction();
-
-    try {
-      // 1) Création de l'école
-      const school = await School.create(data, { transaction });
-
-      // 2) Création des classes
-      const classrooms = this.defaultClasses.map((name,i) => ({
-        name,
-        level: i + 1,
-        school_id: school.id,
-      }));
-      await ClassRoom.bulkCreate(classrooms, { transaction });
-
-      // 3) Création des matières
-      const matters = this.defaultMatters.map((name) => ({
-        name,
-        school_id: school.id,
-      }));
-      await Matter.bulkCreate(matters, { transaction });
-
-      // 4) Création automatique de l'année scolaire actuelle
-      const currentYearData = this.generateCurrentAcademicYear();
-      await AcademicYear.create(
-        {
-          ...currentYearData,
-          school_id: school.id,
-        },
-        { transaction }
-      );
-
-      // 5) Valider la transaction
-      await transaction.commit();
-
-      // 6) Retourner l’école avec relations
-      return await School.findByPk(school.id, {
-        include: [
-          { model: ClassRoom, as: "classrooms" },
-          { model: Matter, as: "matters" },
-          { model: AcademicYear, as: "academic_years" },
-        ],
+async create(data: any) {
+  const transaction: Transaction = await sequelize.transaction();
+  console.log("Données reçues pour la création de l'école :", data);
+  
+  try {
+    // Upload logo si présent
+    if (data.logo) {
+      // Si tu utilises multer, data.logo aura déjà un path temporaire
+      // Sinon, data.logo est directement le fichier
+      const filePath = data.logo.path || data.logo.tempFilePath || data.logo;
+      
+      const uploaded = await cloudinary.uploader.upload(filePath, {
+        folder: 'schools',
+        resource_type: 'image'
       });
-    } catch (error: any) {
-      await transaction.rollback();
-      console.error("Erreur lors de la création de l'école :", error);
-      throw new Error(error.message || "Erreur lors de la création de l'école");
+      
+      data.logo = uploaded.secure_url;
     }
-  }
 
+    // 1) Création de l'école
+    const school = await School.create(data, { transaction });
+
+    // 2) Création des classes
+    const classrooms = this.defaultClasses.map((name, i) => ({
+      name,
+      level: i + 1,
+      school_id: school.id,
+    }));
+    await ClassRoom.bulkCreate(classrooms, { transaction });
+
+    // 3) Création des matières
+    const matters = this.defaultMatters.map((name) => ({
+      name,
+      school_id: school.id,
+    }));
+    await Matter.bulkCreate(matters, { transaction });
+
+    // 4) Création automatique de l'année scolaire actuelle
+    const currentYearData = this.generateCurrentAcademicYear();
+    await AcademicYear.create(
+      {
+        ...currentYearData,
+        school_id: school.id,
+      },
+      { transaction }
+    );
+
+    await transaction.commit();
+
+    return await School.findByPk(school.id, {
+      include: [
+        { model: ClassRoom, as: "classrooms" },
+        { model: Matter, as: "matters" },
+        { model: AcademicYear, as: "academic_years" },
+      ],
+    });
+  } catch (error: any) {
+    await transaction.rollback();
+    console.error("Erreur lors de la création de l'école :", error);
+    throw new Error(error.message || "Erreur lors de la création de l'école");
+  }
+}
 
   // Récupérer toutes les écoles
   async findAll() {

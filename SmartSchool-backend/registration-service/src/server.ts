@@ -35,7 +35,7 @@ const PORT = config.port;
     console.log("Consommateur 'matiere.verify' démarré");
 
     // ÉTAPE 4 : SYNCHRONISER LA BASE DE DONNÉES
-    await sequelize.sync({ force: false });
+    await sequelize.sync();
     console.log("Base de données synchronisée");
 
     // ÉTAPE 5 : DÉMARRER LE SERVEUR

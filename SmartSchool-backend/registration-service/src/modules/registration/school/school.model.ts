@@ -21,8 +21,6 @@ School.init(
 
     name: { type: DataTypes.STRING, allowNull: false },
 
-    school_name: { type: DataTypes.STRING, allowNull: true },  // optionnel
-
     email: { type: DataTypes.STRING, allowNull: false },
 
     phone_school: { type: DataTypes.STRING, allowNull: false },

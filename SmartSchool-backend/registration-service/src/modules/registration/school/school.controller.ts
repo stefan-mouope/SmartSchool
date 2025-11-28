@@ -2,33 +2,44 @@ import { Request, Response } from "express";
 import { SchoolService } from "./school.service";
 import { and, where } from "sequelize";
 import { Director, School } from "../models";
+import fs from 'fs';
 
 const schoolService = new SchoolService();
 
 export class SchoolController {
   // Créer une école
-  
-createSchool = async (req: Request, res: Response) => {
-  try {
-    const data = { ...req.body };
-
-    // 🎯 intégrer automatiquement le logo Cloudinary
-    if (req.file) {
-      data.logo = req.file.path;            // URL Cloudinary
-      data.logo_public_id = req.file.filename; // ID dans Cloudinary
+  create = async (req: Request, res: Response) => {
+    try {
+    console.log('Body:', req.body);
+    console.log('File:', req.file);
+    
+    if (!req.file) {
+      return res.status(400).json({ message: 'Le logo est requis' });
     }
-
+    
+    const data = {
+      ...req.body,
+      logo: req.file // Le fichier uploadé par multer
+    };
+    
     const school = await schoolService.create(data);
-
-    res.status(201).json({
-      message: "École créée avec succès",
-      school,
-    });
+    
+    // Nettoyer le fichier temporaire après upload
+    if (req.file?.path) {
+      fs.unlinkSync(req.file.path);
+    }
+    
+    res.status(201).json(school);
   } catch (error: any) {
-    console.error("Erreur création école :", error);
-    res.status(500).json({ error: error.message });
+    // Nettoyer le fichier temporaire en cas d'erreur
+    if (req.file?.path && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    
+    console.error('Erreur création école:', error);
+    res.status(500).json({ message: error.message });
   }
-};
+}
 async findAllSchoolWithoutDirector(req: Request, res: Response) {
   try {
     console.log("test"); // pour vérifier que la fonction est appelée
