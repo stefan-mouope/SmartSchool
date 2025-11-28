@@ -9,9 +9,10 @@ export const calculerMoyenne = (inter1: string, inter2: string, exam: string): s
 export const getAppreciation = (moyenne: string): string => {
   const moy = parseFloat(moyenne);
   if (!moy) return '';
-  if (moy >= 16) return 'Excellent';
-  if (moy >= 14) return 'Très bien';
-  if (moy >= 12) return 'Bien';
+   if (moy >= 19) return 'Excellent';
+  if (moy >= 16) return 'Tres Bien';
+  if (moy >= 14) return 'Bien';
+  if (moy >= 12) return 'Assez-Bien';
   if (moy >= 10) return 'Passable';
   return 'Insuffisant';
 };

@@ -2,7 +2,8 @@ import React from 'react';
 import { UserRole, MenuItem } from '@/types';
 import { menus, userNames } from '@/constants/menus';
 import { Settings, LogOut } from 'lucide-react';
-
+import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 interface SidebarProps {
   currentUser: UserRole;
   currentPage: string;
@@ -18,6 +19,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const userMenu: MenuItem[] = menus[currentUser] || [];
   const userName = userNames[currentUser];
+  const [isLoading, setIsLoading] = React.useState(false);
+  const { logout } = useAuth();
+    const navigate = useNavigate();
+
+
+  const handleLogout = async () => {
+    setIsLoading(true);
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   return (
     <div 
@@ -57,9 +74,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <Settings size={20} />
           <span>Paramètres</span>
         </button>
-        <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-destructive hover:bg-destructive/10 transition-colors">
+        <button 
+        onClick={handleLogout}
+        className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-destructive hover:bg-destructive/10 transition-colors">
           <LogOut size={20} />
-          <span>Déconnexion</span>
+          {isLoading ? <span>Déconnexion...</span> : <span>Déconnexion</span>}
         </button>
       </div>
     </div>

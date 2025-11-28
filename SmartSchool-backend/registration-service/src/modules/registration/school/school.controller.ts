@@ -3,6 +3,7 @@ import { SchoolService } from "./school.service";
 import { and, where } from "sequelize";
 import { Director, School } from "../models";
 import fs from 'fs';
+import { translateToEnglish } from "../../../config/translation";
 
 const schoolService = new SchoolService();
 
@@ -17,10 +18,13 @@ export class SchoolController {
       return res.status(400).json({ message: 'Le logo est requis' });
     }
     
+  
+
     const data = {
       ...req.body,
       logo: req.file // Le fichier uploadé par multer
     };
+
     
     const school = await schoolService.create(data);
     

@@ -36,6 +36,10 @@ School.init(
     logo: { type: DataTypes.STRING, allowNull: true },   // URL ou path du fichier
 
     devise: { type: DataTypes.STRING, allowNull: true }, // ex: "XAF" ou "FCFA"
+
+    devise_en : { type: DataTypes.STRING, allowNull: true }, // ex: "USD" or "EUR"
+
+    name_en: { type: DataTypes.STRING, allowNull: true }, // English name
   },
   {
     sequelize, 

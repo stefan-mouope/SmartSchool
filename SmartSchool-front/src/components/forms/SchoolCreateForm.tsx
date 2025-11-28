@@ -75,6 +75,8 @@ export const SchoolCreationForm: React.FC<SchoolFormProps> = ({ isOpen, onCancel
     name: '',
 
     devise: '',
+    devise_en: '',
+    name_en: '',
     email: '',
     phone_school: '',
     region: '',
@@ -96,6 +98,8 @@ export const SchoolCreationForm: React.FC<SchoolFormProps> = ({ isOpen, onCancel
       setFormData({
         name: '',
         devise: '',
+        devise_en: '',
+        name_en: '',
         email: '',
         phone_school: '',
         region: '',
@@ -131,6 +135,10 @@ export const SchoolCreationForm: React.FC<SchoolFormProps> = ({ isOpen, onCancel
 
 
     if (!formData.devise.trim()) newErrors.devise = 'La devise est requise';
+
+    if (!formData.devise_en.trim()) newErrors.devise_en = 'La devise en anglais est requise';
+
+    if (!formData.name_en.trim()) newErrors.name_en = "Le nom en anglais est requis";
 
     if (!formData.email.trim()) newErrors.email = 'L’email est requis';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
@@ -281,6 +289,16 @@ const handleSubmit = async () => {
             disabled={isSubmitting || submitSuccess}
           />
         </FormField>
+ <FormField label="Nom de l'établissement en anglais" required error={errors.name_en} icon={Building2}>
+          <Input
+            name="name_en"
+            value={formData.name_en}
+            onChange={handleChange}
+            className="pl-10"
+            placeholder="Ex: General High School"
+            disabled={isSubmitting || submitSuccess}
+          />
+        </FormField>
 
     
         {/* Devise */}
@@ -291,6 +309,16 @@ const handleSubmit = async () => {
             onChange={handleChange}
             className="pl-10"
             placeholder="Ex: Paix – Travail – Patrie"
+            disabled={isSubmitting || submitSuccess}
+          />
+        </FormField>
+         <FormField label="Devise de l'école en anglais" required error={errors.devise_en} icon={Quote}>
+          <Input
+            name="devise_en"
+            value={formData.devise_en}
+            onChange={handleChange}
+            className="pl-10"
+            placeholder="Ex: Peace – Work – Fatherland"
             disabled={isSubmitting || submitSuccess}
           />
         </FormField>

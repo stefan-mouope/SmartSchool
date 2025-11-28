@@ -57,7 +57,7 @@ export const getStudentById = async (id: number): Promise<StudentResult> => {
 };
 // get student by school id
 export const getStudentsBySchoolId = async (school_id: number): Promise<StudentResult[]> => {
-  const res = await api.get<StudentResult[]>(`${BASE_INSCRIPTION_SERVICE}/api/eleves`, {
+  const res = await api.get<StudentResult[]>(`${BASE_INSCRIPTION_SERVICE}/api/eleves/school`, {
     params: { school_id }
   });
   return res.data;

@@ -25,7 +25,7 @@ const Index = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('');
 
-  const currentUser = useAuthStore(state => state.user.role);
+  const currentUser = useAuthStore(state => state.user?.role);
 
   const renderPage = () => {
     // Super user pages

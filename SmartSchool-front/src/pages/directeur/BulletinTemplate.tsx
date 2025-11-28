@@ -1,5 +1,7 @@
 // src/components/BulletinTemplate.tsx
 import React from 'react';
+import { getSchoolById } from '@/api/registration-service/school.api';
+import { useAuthStore } from '@/store/authStore';
 
 interface BulletinLine {
   id: number;
@@ -47,6 +49,26 @@ export const BulletinTemplate: React.FC<BulletinTemplateProps> = ({
     if (moyenne >= 10) return 'Passable';
     return 'Insuffisant';
   };
+
+  const [school, setSchool] = React.useState<any>(null);
+  const school_id = useAuthStore(state => state.school_id);
+
+  const handleGetSchool = async (school_id: number) => {
+    try {
+      const school = await getSchoolById(school_id);
+      setSchool(school);
+      console.log(school)
+      return school;
+    } catch (error) {
+      console.error('Erreur lors de la récupération de l\'école :', error);
+      return null;
+    }
+  };
+
+  React.useEffect(() => {
+  
+    handleGetSchool(school_id);
+  }, []);
 
   // Calculer les moyennes des séquences pour le trimestre
   const calculerMoyenneSequence = (sequenceNum: 1 | 2) => {
@@ -100,15 +122,16 @@ export const BulletinTemplate: React.FC<BulletinTemplateProps> = ({
               Paix – Travail – Patrie
             </div>
             <div style={{ fontWeight: 'bold', fontSize: '13px', marginBottom: '5px' }}>
-              GROUPE SCOLAIRE BILINGUE LES CHAMPIONS
+              {school ? school.name.toUpperCase() : ''  }
             </div>
             <div style={{ fontStyle: 'italic', color: '#444' }}>
-              Discipline – Travail – Succès
+              {school ? school.devise : '' }
             </div>
           </div>
 
           {/* Logo central */}
-          <div style={{
+          <div
+          style={{
             width: '100px',
             height: '100px',
             border: '2px solid #ddd',
@@ -116,16 +139,21 @@ export const BulletinTemplate: React.FC<BulletinTemplateProps> = ({
             alignItems: 'center',
             justifyContent: 'center',
             backgroundColor: '#f9f9f9',
-            borderRadius: '50%'
-          }}>
-            <div style={{
-              fontSize: '10px',
-              color: '#999',
-              textAlign: 'center'
-            }}>
-              LOGO<br/>ÉCOLE
-            </div>
-          </div>
+            borderRadius: '50%',
+            overflow: 'hidden',           // IMPORTANT pour couper ce qui dépasse
+          }}
+        >
+          <img
+            src={school?.logo}
+            alt="Logo"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',         // Remplit sans déformer
+              borderRadius: '50%',        // Rend l’image elle-même circulaire
+            }}
+          />
+        </div>
 
           {/* Section droite (anglais) */}
           <div style={{
@@ -140,10 +168,10 @@ export const BulletinTemplate: React.FC<BulletinTemplateProps> = ({
               Peace – Work – Fatherland
             </div>
             <div style={{ fontWeight: 'bold', fontSize: '13px', marginBottom: '5px' }}>
-              BILINGUAL SCHOOL GROUP "LES CHAMPIONS"
+              {school ? school.name_en.toUpperCase() : '' }
             </div>
             <div style={{ fontStyle: 'italic', color: '#444' }}>
-              Discipline – Work – Success
+              {school ? school.devise_en : '' }
             </div>
           </div>
         </div>

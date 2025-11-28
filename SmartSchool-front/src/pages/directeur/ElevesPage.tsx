@@ -5,6 +5,7 @@ import { useAuthStore } from "@/store/authStore";
 import { getAllInscriptions, InscriptionResult } from "@/api/inscription";
 import { getClassroomsBySchool } from "@/api/registration-service/classroom.api";
 import { StudentCreationForm } from "@/components/forms/StudentCreationForm";
+import { getStudentsBySchoolId } from "@/api/student.api";
 
 interface StudentTable {
   id: number;
@@ -32,11 +33,12 @@ export const ElevesPage: React.FC = () => {
   // 🔹 Charger les élèves
   const fetchEleves = async () => {
     try {
-      const res: InscriptionResult[] = await getAllInscriptions();
+      const res: InscriptionResult[] = await getStudentsBySchoolId(schoolId!);
+      console.log(res);
       const data = res.map((s) => ({
-        id: s.Student.id,
-        matricule: s.Student.matricule,
-        nom: `${s.Student.last_name} ${s.Student.first_name}`,
+        id: s.id,
+        matricule: s.matricule,
+        nom: `${s.last_name} ${s.first_name}`,
         classe: "N/A",
         statut: "Non payé",
         montant: "150 000 FCFA",

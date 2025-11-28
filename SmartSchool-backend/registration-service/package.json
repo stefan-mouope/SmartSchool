@@ -14,10 +14,13 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@vitalets/google-translate-api": "^9.2.1",
     "amqplib": "^0.10.9",
     "axios": "^1.13.2",
     "cloudinary": "^1.41.3",
     "cors": "^2.8.5",
+    "deepl": "^1.0.13",
+    "deepl-node": "^1.22.0",
     "dotenv": "^17.2.3",
     "eureka-js-client": "^4.5.0",
     "express": "^5.1.0",

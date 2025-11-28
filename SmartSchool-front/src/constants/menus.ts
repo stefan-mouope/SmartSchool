@@ -16,7 +16,7 @@ export const menus: Record<UserRole, MenuItem[]> = {
     { id: 'paiements', label: 'Gestion Paiements', icon: DollarSign },
     { id: 'tranches', label: 'Gestion des Tranches', icon: DollarSign },
     { id: 'bulletins', label: 'Bulletins', icon: FileText },
-    { id: 'annees', label: 'Années scolaires', icon: Calendar }
+    // { id: 'annees', label: 'Années scolaires', icon: Calendar }
   ],
   enseignant: [
     { id: 'dashboard', label: 'Tableau de bord', icon: Home },
