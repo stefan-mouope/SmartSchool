@@ -1,18 +1,9 @@
 import axios from "axios";
 
-
-// Remplace tes anciennes constantes par ÇA :
 export const BASE_REGISTRATION = "/registration-service"
 export const BASE_NOTE_SERVICE = "/note-service"
 export const BASE_AUTH_SERVICE = "/auth-service"
 export const BASE_INSCRIPTION_SERVICE = "/inscription-service"
-
-// Base URL: set VITE_API_BASE_URL in .env, default to Django local
-// ==== BASE URL ====
-// export const BASE_REGISTRATION = "REGISTRATION-SERVICE";
-// export const BASE_NOTE_SERVICE = "NOTE-SERVICE";
-// export const BASE_AUTH_SERVICE = "AUTH-SERVICE";
-// export const BASE_ISCRIPTION_SERVICE = "SERVICE-INSCRIPTION";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8081";
 
@@ -30,11 +21,10 @@ let getAccessToken: () => string | null = () => null;
 let refreshTokens: () => Promise<boolean> = async () => false;
 let logoutUser: () => void = () => {};
 
-// ===== Export interceptors registration =====
 export const registerAuthInterceptors = (
   getAccess: () => string | null,
   refresh: () => Promise<boolean>,
-  logout: () => void // NEW !!!
+  logout: () => void
 ) => {
   getAccessToken = getAccess;
   refreshTokens = refresh;
@@ -81,10 +71,17 @@ api.interceptors.response.use(
 
     const status = error.response?.status;
 
-    // ------------ CAS 401 / 403 SUR REFRESH REQUEST ------------
-    // Si la requête qui échoue est /token/refresh → refresh token invalide
+    // ⛔ EXCLURE LOGIN & REFRESH des retry
+    const isLogin = original.url?.includes("/auth-service/api/auth/login");
+    const isRefresh = original.url?.includes("token/refresh");
+
+    if (isLogin || isRefresh) {
+      return Promise.reject(error);
+    }
+
+    // ----- Cas refresh → mauvais token -----
     if (original.url?.includes("token/refresh") && (status === 401 || status === 403)) {
-      logoutUser();      // 🔥 déconnexion immédiate
+      logoutUser();
       return Promise.reject(error);
     }
 
@@ -98,7 +95,7 @@ api.interceptors.response.use(
         refreshPromise = refreshTokens()
           .then((ok) => {
             if (!ok) {
-              logoutUser();  // 🔥 logout si refresh échoue
+              logoutUser();
               processQueue(new Error("refresh_failed"));
               return false;
             }
@@ -107,7 +104,7 @@ api.interceptors.response.use(
             return true;
           })
           .catch(() => {
-            logoutUser();  // 🔥 logout si erreur serveur
+            logoutUser();
             processQueue(new Error("refresh_failed"));
             return false;
           })

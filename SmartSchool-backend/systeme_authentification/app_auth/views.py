@@ -26,6 +26,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 # 2. Vue login qui utilise le serializer
 class CustomLoginView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer  # ← CLÉ ICI
+    permission_classes = [permissions.AllowAny]
+
 
 
 # 3. Register
@@ -37,7 +39,7 @@ class RegisterView(generics.CreateAPIView):
 
 # 4. Logout
 class LogoutView(APIView):
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     def post(self, request):
         try:

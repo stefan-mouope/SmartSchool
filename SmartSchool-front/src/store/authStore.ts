@@ -164,5 +164,6 @@ export const useAuthStore = create<AuthState>()(
 // Connect axios interceptors
 registerAuthInterceptors(
   () => useAuthStore.getState().access,
-  () => useAuthStore.getState().refreshToken()
+  () => useAuthStore.getState().refreshToken(),
+  () => useAuthStore.getState().logout()
 );
