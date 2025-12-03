@@ -4,7 +4,7 @@ import uuid
 from functools import wraps
 from django.http import JsonResponse
 
-HOST = "localhost"  # ou l'adresse de ton container
+HOST = "rabbitmq-service"  # ou l'adresse de ton container
 QUEUE_NAME = "auth_verify_queue"
 
 # Connexion RabbitMQ persistante

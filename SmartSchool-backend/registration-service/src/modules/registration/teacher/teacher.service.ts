@@ -6,7 +6,10 @@ export class TeacherService {
   async create(data: any) {
     try {
       const teacher = await Teacher.create(data);
-      return await Teacher.findByPk(teacher.id, { include: [{ model: School, as: "school" }] });
+
+      return await Teacher.findByPk(teacher.id, {
+        include: [{ model: School, as: "school" }]
+      });
     } catch (error) {
       throw error;
     }
@@ -15,24 +18,23 @@ export class TeacherService {
   // Récupérer tous les professeurs
   async findAll() {
     try {
-      const teachers = await Teacher.findAll({
+      return await Teacher.findAll({
         include: [{ model: School, as: "school" }],
       });
-      return teachers;
     } catch (error) {
       throw error;
     }
   }
 
   // Récupérer un professeur par ID
-  async findById(id: number) {
+  async findById(id: string) {
     try {
       const teacher = await Teacher.findByPk(id, {
-        include: [{ model: School, as: "school" }],
+        include: [{ model: School, as: "school" }]
       });
-      if (!teacher) {
-        throw new Error("Professeur non trouvé");
-      }
+
+      if (!teacher) throw new Error("Professeur non trouvé");
+
       return teacher;
     } catch (error) {
       throw error;
@@ -42,43 +44,44 @@ export class TeacherService {
   // Récupérer les professeurs par école
   async findBySchool(schoolId: number) {
     try {
-      const teachers = await Teacher.findAll({
+      return await Teacher.findAll({
         where: { school_id: schoolId },
         include: [{ model: School, as: "school" }],
       });
-      return teachers;
     } catch (error) {
       throw error;
     }
   }
 
   // Mettre à jour un professeur
-  async update(id: number, data: any) {
+  async update(id: string, data: any) {
     try {
       const teacher = await Teacher.findByPk(id);
-      if (!teacher) {
-        throw new Error("Professeur non trouvé");
-      }
+
+      if (!teacher) throw new Error("Professeur non trouvé");
+
       await teacher.update(data);
-      return await Teacher.findByPk(id, { include: [{ model: School, as: "school" }] });
+
+      return await Teacher.findByPk(id, {
+        include: [{ model: School, as: "school" }]
+      });
     } catch (error) {
       throw error;
     }
   }
 
   // Supprimer un professeur
-  async delete(id: number) {
+  async delete(id: string) {
     try {
       const teacher = await Teacher.findByPk(id);
-      if (!teacher) {
-        throw new Error("Professeur non trouvé");
-      }
+
+      if (!teacher) throw new Error("Professeur non trouvé");
+
       await teacher.destroy();
+
       return { message: "Professeur supprimé avec succès" };
     } catch (error) {
       throw error;
     }
   }
 }
-
-

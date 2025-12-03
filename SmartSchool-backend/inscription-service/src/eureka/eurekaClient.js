@@ -36,7 +36,9 @@ const client = new Eureka({
     }
   },
   eureka: {
-    host: 'localhost',
+    // remplcement du host par le nom du service dans docker-compose.yml
+    host: 'registry-service',
+    // host: 'localhost',
     port: 8761,
     servicePath: '/eureka/apps/'
   }

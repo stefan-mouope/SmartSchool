@@ -1,55 +1,62 @@
-// modules/registration/events/rabbitmq.ts
-import amqp, { Channel, Replies, ConsumeMessage } from "amqplib";
+import amqp, { Channel, ConsumeMessage, Replies } from "amqplib";
 import { v4 as uuidv4 } from "uuid";
 
 let channel: Channel | null = null;
 let replyQueue: Replies.AssertQueue | null = null;
 
-// Map pour gérer les réponses RPC
+// Map des réponses RPC en attente
 const pendingResponses = new Map<
   string,
-  { resolve: (value: any) => void; reject: (err: any) => void }
+  { resolve: (data: any) => void; reject: (err: any) => void }
 >();
 
 // ---------------------------------------------------------
-// 🔌 Connexion à RabbitMQ
+// 🔌 Connexion à RabbitMQ (avec retry)
 // ---------------------------------------------------------
 export const connectRabbitMQ = async (): Promise<void> => {
-  if (channel) return; // Déjà connecté
+  if (channel) return;
 
-  const connection = await amqp.connect("amqp://localhost");
-  channel = await connection.createChannel();
+  const maxRetries = 10;
+  let retries = 0;
 
-  // Exchange utilisé pour tous les events du service inscription
-  await channel.assertExchange("inscription_events", "topic", { durable: false });
+  while (retries < maxRetries) {
+    try {
+      const connection = await amqp.connect(`amqp://${process.env.RABBITMQ_HOST}`);
+      channel = await connection.createChannel();
 
-  // Création de la replyQueue (RPC Response Queue)
-  replyQueue = await channel.assertQueue("", { exclusive: true });
+      // Exchange principal
+      await channel.assertExchange("inscription_events", "topic", { durable: false });
 
-  console.log("🐰 RabbitMQ connecté. ReplyQueue :", replyQueue.queue);
+      // Queue de réponse RPC (exclusif)
+      replyQueue = await channel.assertQueue("", { exclusive: true });
 
-  // Consumer de la replyQueue (gestion RPC)
-  channel.consume(
-    replyQueue.queue,
-    (msg) => {
-      if (!msg) return;
+      console.log("🐰 RabbitMQ connecté. ReplyQueue :", replyQueue.queue);
 
-      const correlationId = msg.properties.correlationId;
-      if (!correlationId) return;
+      // Consommation automatique des réponses RPC
+      channel.consume(
+        replyQueue.queue,
+        (msg) => {
+          if (!msg) return;
+          const correlationId = msg.properties.correlationId;
 
-      const pending = pendingResponses.get(correlationId);
-      if (!pending) return;
+          if (pendingResponses.has(correlationId)) {
+            const payload = JSON.parse(msg.content.toString());
+            pendingResponses.get(correlationId)!.resolve(payload);
+            pendingResponses.delete(correlationId);
+          }
+        },
+        { noAck: true }
+      );
 
-      try {
-        pending.resolve(JSON.parse(msg.content.toString()));
-      } catch (err) {
-        pending.reject(err);
-      } finally {
-        pendingResponses.delete(correlationId);
-      }
-    },
-    { noAck: true }
-  );
+      return;
+    } catch (err) {
+      retries++;
+      console.log(`⏳ Tentative ${retries}/${maxRetries} - En attente de RabbitMQ...`);
+      await new Promise((res) => setTimeout(res, 3000));
+    }
+  }
+
+  throw new Error("❌ Impossible de se connecter à RabbitMQ après plusieurs tentatives");
 };
 
 // ---------------------------------------------------------
@@ -60,9 +67,12 @@ export const getChannel = (): Channel => {
   return channel;
 };
 
-export const getReplyQueue = (): string => {
+// ---------------------------------------------------------
+// 📦 Obtenir la replyQueue (objet complet)
+// ---------------------------------------------------------
+export const getReplyQueue = (): Replies.AssertQueue => {
   if (!replyQueue) throw new Error("ReplyQueue non initialisée");
-  return replyQueue.queue;
+  return replyQueue;
 };
 
 // ---------------------------------------------------------
@@ -76,36 +86,28 @@ export const callRpc = async (
   const correlationId = uuidv4();
 
   return new Promise((resolve, reject) => {
-    // Timeout de sécurité
+    // Timeout RPC
     const timer = setTimeout(() => {
       pendingResponses.delete(correlationId);
       reject(new Error(`RPC Timeout → ${routingKey}`));
     }, timeoutMs);
 
-    // Enregistrer l’attente
-    pendingResponses.set(correlationId, {
-      resolve: (res) => {
-        clearTimeout(timer);
-        resolve(res);
-      },
-      reject,
-    });
+    pendingResponses.set(correlationId, { resolve, reject });
 
-    // Envoi du message RPC
     getChannel().publish(
       "inscription_events",
       routingKey,
       Buffer.from(JSON.stringify({ data })),
       {
         correlationId,
-        replyTo: getReplyQueue(),
+        replyTo: getReplyQueue().queue,
       }
     );
   });
 };
 
 // ---------------------------------------------------------
-// 👂 Consume Event (écoute d’événements → handler)
+// 👂 Consommation d'événements
 // ---------------------------------------------------------
 export const consumeEvent = async (
   routingKey: string,
@@ -127,10 +129,8 @@ export const consumeEvent = async (
       try {
         const event = JSON.parse(msg.content.toString());
         await handler(event, msg, ch);
-        // ch.ack(msg);
       } catch (err) {
         console.error("Erreur dans le consumer:", err);
-        // ch.nack(msg, false, false);
       }
     },
     { noAck: false }
@@ -142,31 +142,28 @@ export const consumeEvent = async (
 // ---------------------------------------------------------
 export const publishEvent = async <T = any>(
   event: T,
-  routingKey: string = "inscription.request"
+  routingKey = "inscription.request"
 ): Promise<any> => {
-  if (!channel) throw new Error("Channel RabbitMQ non initialisé");
-  if (!replyQueue) throw new Error("ReplyQueue non initialisée");
-
   const correlationId = uuidv4();
 
-  return new Promise<any>((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     pendingResponses.set(correlationId, { resolve, reject });
 
-    channel!.publish(
+    getChannel().publish(
       "inscription_events",
       routingKey,
       Buffer.from(JSON.stringify(event)),
       {
-        replyTo: replyQueue.queue,
+        replyTo: getReplyQueue().queue,
         correlationId,
         persistent: false,
       }
     );
 
-    // Timeout si pas de réponse
+    // Timeout sécuritaire
     setTimeout(() => {
       if (pendingResponses.has(correlationId)) {
-        pendingResponses.get(correlationId)?.reject(new Error("Timeout RabbitMQ"));
+        pendingResponses.get(correlationId)!.reject(new Error("Timeout RabbitMQ"));
         pendingResponses.delete(correlationId);
       }
     }, 10000);
@@ -174,38 +171,48 @@ export const publishEvent = async <T = any>(
 };
 
 // ---------------------------------------------------------
-// 📤 Publish dynamique (exchange variable)
+// 📤 Publish dynamique avec exchange variable
 // ---------------------------------------------------------
+
 export const publishDynamiqueEvent = async <T = any>(
   exchange: string,
   event: T,
   routingKey: string
 ): Promise<any> => {
-  if (!channel) throw new Error("Channel RabbitMQ non initialisé");
-  if (!replyQueue) throw new Error("ReplyQueue non initialisée");
-
   const correlationId = uuidv4();
 
-  return new Promise<any>((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     pendingResponses.set(correlationId, { resolve, reject });
 
-    channel!.publish(
+    const channel = getChannel();
+    const replyQueue = getReplyQueue().queue;
+
+    console.log(`[Publisher] Envoi du message sur "${routingKey}" avec correlationId ${correlationId}`);
+
+    channel.publish(
       exchange,
       routingKey,
       Buffer.from(JSON.stringify(event)),
       {
-        replyTo: replyQueue.queue,
+        replyTo: replyQueue,
         correlationId,
         persistent: false,
       }
     );
 
     // Timeout
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       if (pendingResponses.has(correlationId)) {
-        pendingResponses.get(correlationId)?.reject(new Error("Timeout RabbitMQ"));
+        pendingResponses.get(correlationId)!.reject(new Error("Timeout RabbitMQ"));
         pendingResponses.delete(correlationId);
+        console.error(`[Publisher] Timeout pour correlationId ${correlationId}`);
       }
-    }, 10000);
+    }, 20000); // 20s pour donner plus de marge
+
+    // Nettoyage si réponse reçue
+    pendingResponses.get(correlationId)!.resolve = (data: any) => {
+      clearTimeout(timer);
+      resolve(data);
+    };
   });
 };

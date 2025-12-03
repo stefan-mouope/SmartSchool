@@ -13,7 +13,8 @@ const pendingResponses = new Map();
  */
 export const connectRabbitMQ = async () => {
   try {
-    const connection = await amqp.connect("amqp://localhost");
+    // const connection = await amqp.connect("amqp://localhost");
+    const connection = await amqp.connect("amqp://rabbitmq-service"); // Docker Compose
     channel = await connection.createChannel();
 
     // Déclare l'exchange commun

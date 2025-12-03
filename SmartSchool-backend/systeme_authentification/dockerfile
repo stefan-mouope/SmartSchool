@@ -18,7 +18,5 @@ COPY . .
 # Expose port
 EXPOSE 8001
 
-# Run server
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8001"]
+CMD python manage.py runserver 0.0.0.0:8001 && python manage.py runconsumer
 
-CMD ["python", "manage.py", "runconsumer"]
