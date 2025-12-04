@@ -11,15 +11,14 @@ services:
   config-service:
     build: ./smartSchool-config/config-service
     ports:
-      - "9000:8080"
+      - "8080:8080"
     environment:
       - SPRING_APPLICATION_NAME=config-service
       - SERVER_PORT=8080
-      # - SPRING_CLOUD_CONFIG_SERVER_GIT_URI=https://github.com/sandjonyves/smartSchool-config.git
       - SPRING_PROFILES_ACTIVE=native
-      - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH-LOCATIONS=file:///cloud-config/
+      - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH-LOCATIONS=file:///cloud-config-docker/
     volumes:
-      - ./smartSchool-config/cloud-config:/cloud-config
+      - ./smartSchool-config/cloud-config-docker:/cloud-config-docker
     networks:
       - smartschool-network
     healthcheck:
@@ -31,12 +30,14 @@ services:
   registry-service:
     build: ./smartSchool-config/registry-service
     ports:
-      - "9001:8761"
+      - "8761:8761"
     environment:
-      - SPING_CLOUD_CONFIG_URI=http://config-service:8080
+      - SPRING_CLOUD_CONFIG_URI=http://config-service:8080
       - SPRING_APPLICATION_NAME=registry-service
       - SERVER_PORT=8761
-      - SPRING_CLOUD_CONFIG_URI=http://config-service:8080 
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=false
+      - EUREKA_CLIENT_FETCH_REGISTRY=false
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
     networks:
       - smartschool-network
     depends_on:
