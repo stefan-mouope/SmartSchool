@@ -3,7 +3,7 @@ import axios from "axios";
 export const BASE_REGISTRATION = "/REGISTRATION-SERVICE"
 export const BASE_NOTE_SERVICE = "/NOTE-SERVICE"
 export const BASE_AUTH_SERVICE = "/AUTH-SERVICE"
-export const BASE_INSCRIPTION_SERVICE = "/INSCRIPTION-SERVICE"
+export const BASE_INSCRIPTION_SERVICE = "/SERVICE-INSCRIPTION"
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8081";
 const HOST_NAME = 'proxy-service'

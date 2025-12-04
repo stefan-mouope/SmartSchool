@@ -15,7 +15,7 @@ services:
     environment:
       - SPRING_APPLICATION_NAME=config-service
       - SERVER_PORT=8080
-      # - SPRING_CLOUD_CONFIG_SERVER_GIT_URI=https://github.com/sandjonyves/smartSchool-config.git
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_URI=https://github.com/sandjonyves/smartSchool-config.git
       - SPRING_PROFILES_ACTIVE=native
       - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH-LOCATIONS=file:///cloud-config/
     volumes:
