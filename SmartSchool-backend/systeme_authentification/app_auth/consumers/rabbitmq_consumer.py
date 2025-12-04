@@ -184,6 +184,7 @@ class RabbitMQConsumer(threading.Thread):
 # ---------------------------------------
 # 🔥 CONSUMER 2 → CREATE_DIRECTOR (INSCRIPTION)
 # ---------------------------------------
+
 class RabbitMQRegistrationConsumer(threading.Thread):
     def __init__(self):
         super().__init__(daemon=True)
@@ -201,12 +202,18 @@ class RabbitMQRegistrationConsumer(threading.Thread):
         )
         channel = connection.channel()
 
+        # Déclaration de l'exchange et de la queue
         channel.exchange_declare(exchange="registration_events", exchange_type="topic", durable=True)
         channel.queue_declare(queue=self.queue_name, durable=True)
-        channel.queue_bind(exchange="registration_events", queue=self.queue_name, routing_key="create_director")
 
-        print("🔥 RegistrationConsumer RabbitMQ démarré... (create_director)")
+        # Binding pour attraper tous les messages registration.create.*
+        channel.queue_bind(
+            exchange="registration_events",
+            queue=self.queue_name,
+            routing_key="registration.create.*"
+        )
 
+        # Callback défini à l'intérieur de run() pour avoir accès à channel
         def callback(ch, method, properties, body):
             payload = json.loads(body)
 
@@ -225,8 +232,9 @@ class RabbitMQRegistrationConsumer(threading.Thread):
             except Exception as e:
                 response = {"success": False, "error": str(e)}
 
+            # Réponse RPC si nécessaire
             if properties.reply_to:
-                channel.basic_publish(
+                ch.basic_publish(
                     exchange="",
                     routing_key=properties.reply_to,
                     properties=pika.BasicProperties(correlation_id=properties.correlation_id),
@@ -235,5 +243,6 @@ class RabbitMQRegistrationConsumer(threading.Thread):
 
             ch.basic_ack(delivery_tag=method.delivery_tag)
 
+        # Consommation
         channel.basic_consume(queue=self.queue_name, on_message_callback=callback)
         channel.start_consuming()
