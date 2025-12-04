@@ -8,22 +8,18 @@ export class DirectorController {
   // ---------------------------------------------------------
   // 🧑‍💼 Créer un directeur
   // ---------------------------------------------------------
-  async create(req: Request, res: Response) {
+    async create(req: Request, res: Response) {
     let directorCreated: any | null = null;
 
     try {
-      // Générer automatiquement le username
-      const username = `${req.body.first_name.toLowerCase()}.${req.body.last_name.toLowerCase()}`;
+      const username =
+        `${req.body.first_name.toLowerCase()}.${req.body.last_name.toLowerCase()}`;
 
-      // 1) Création dans le microservice Node
       directorCreated = await directorService.create({
         ...req.body,
         username,
       });
 
-      console.log("📌 Directeur créé côté Node :", directorCreated);
-
-      // Sécurité TypeScript → si pour une raison inconnue c'est null
       if (!directorCreated) {
         return res.status(500).json({
           success: false,
@@ -31,29 +27,21 @@ export class DirectorController {
         });
       }
 
-      // Payload destiné à Django
       const payload = {
         ...req.body,
         role: "directeur",
         username,
-        registrie_id: directorCreated.id, // ici OK (non-null)
+        registrie_id: directorCreated.id,
       };
 
-      console.log('djsahdhsajhdjsahdjhasjdhkashdkjashdkhaskhdkahdkhasdkjashdjas')
-      // 2) RPC vers Django
       const rpcResponse = await publishDynamiqueEvent(
         "inscription_events",
         payload,
-        "create_director"
+        "inscription.create.director"
       );
 
-      console.log("📥 Réponse RPC Django :", rpcResponse);
-
-      // 3) Gestion des erreurs RPC
       if (!rpcResponse || !rpcResponse.success) {
-        console.log("❌ Django a échoué → rollback directeur Node");
-
-        await directorService.delete(directorCreated.id); // plus d'erreur TS ici
+        await directorService.delete(directorCreated.id);
 
         return res.status(400).json({
           success: false,
@@ -61,7 +49,6 @@ export class DirectorController {
         });
       }
 
-      // 4) Réponse finale OK
       return res.status(201).json({
         success: true,
         message: "Directeur créé avec succès",
@@ -72,7 +59,6 @@ export class DirectorController {
     } catch (error: any) {
       console.error("❌ Erreur controller create_director:", error);
 
-      // Rollback si Node a déjà créé avant l’erreur
       if (directorCreated !== null) {
         await directorService.delete(directorCreated.id);
       }
@@ -80,7 +66,6 @@ export class DirectorController {
       return res.status(500).json({ error: error.message });
     }
   }
-
   // ---------------------------------------------------------
   // 📌 Récupérer tous les directeurs
   // ---------------------------------------------------------

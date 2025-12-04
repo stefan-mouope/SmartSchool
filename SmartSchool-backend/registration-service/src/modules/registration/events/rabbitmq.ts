@@ -22,6 +22,7 @@ export const connectRabbitMQ = async (): Promise<void> => {
   while (retries < maxRetries) {
     try {
       const connection = await amqp.connect(`amqp://${process.env.RABBITMQ_HOST}`);
+      console.log(process.env.RABBITMQ_HOST, 'dsajdhjkashdjhasjkhdjsahdkjsahkdhsakhdkahdkjgdhgacbnghjdgsa')
       channel = await connection.createChannel();
 
       // Exchange principal
@@ -126,7 +127,7 @@ export const consumeEvent = async (
     async (msg) => {
       if (!msg) return;
 
-      try {
+      try { 
         const event = JSON.parse(msg.content.toString());
         await handler(event, msg, ch);
       } catch (err) {
@@ -174,20 +175,23 @@ export const publishEvent = async <T = any>(
 // 📤 Publish dynamique avec exchange variable
 // ---------------------------------------------------------
 
+
 export const publishDynamiqueEvent = async <T = any>(
   exchange: string,
   event: T,
   routingKey: string
 ): Promise<any> => {
   const correlationId = uuidv4();
+  const channel = getChannel();
+  const replyQueue = getReplyQueue().queue;
 
   return new Promise((resolve, reject) => {
+    // Enregistrer la promesse une seule fois
     pendingResponses.set(correlationId, { resolve, reject });
 
-    const channel = getChannel();
-    const replyQueue = getReplyQueue().queue;
-
-    console.log(`[Publisher] Envoi du message sur "${routingKey}" avec correlationId ${correlationId}`);
+    console.log(
+      `[Publisher] ➜ Publish RPC routingKey="${routingKey}" correlationId=${correlationId}`
+    );
 
     channel.publish(
       exchange,
@@ -200,19 +204,17 @@ export const publishDynamiqueEvent = async <T = any>(
       }
     );
 
-    // Timeout
+    // Timeout pour éviter les promesses bloquées
     const timer = setTimeout(() => {
       if (pendingResponses.has(correlationId)) {
-        pendingResponses.get(correlationId)!.reject(new Error("Timeout RabbitMQ"));
+        console.error(`[Publisher] ❌ Timeout RPC pour correlationId=${correlationId}`);
+        pendingResponses.get(correlationId)?.reject(new Error("Timeout RabbitMQ"));
         pendingResponses.delete(correlationId);
-        console.error(`[Publisher] Timeout pour correlationId ${correlationId}`);
       }
-    }, 20000); // 20s pour donner plus de marge
+    }, 20000);
 
-    // Nettoyage si réponse reçue
-    pendingResponses.get(correlationId)!.resolve = (data: any) => {
-      clearTimeout(timer);
-      resolve(data);
-    };
+    // IMPORTANT : ici on *ne réécrit plus* resolve/reject !
+    // C’est le consumer qui appellera pendingResponses.get(correlationId).resolve(data)
+
   });
 };

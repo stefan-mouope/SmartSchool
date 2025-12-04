@@ -106,6 +106,15 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
+
+RABBITMQ_HOST = 'rabbitmq-service'  # ou 'localhost' en local
+RABBITMQ_PORT = 5672
+RABBITMQ_USER = 'guest'
+RABBITMQ_PASSWORD = 'guest'
+
+# Activer/désactiver les consumers au démarrage
+ENABLE_RABBITMQ_CONSUMERS = True
+
 AUTH_USER_MODEL = 'app_auth.User'
 
 # CORS configuration
