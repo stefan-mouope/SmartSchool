@@ -11,7 +11,7 @@ services:
   config-service:
     build: ./smartSchool-config/config-service
     ports:
-      - "9000:8080"
+      - "8080:8080"
     environment:
       - SPRING_APPLICATION_NAME=config-service
       - SERVER_PORT=8080
@@ -31,12 +31,13 @@ services:
   registry-service:
     build: ./smartSchool-config/registry-service
     ports:
-      - "9001:8761"
+      - "8761:8761"
     environment:
-      - SPING_CLOUD_CONFIG_URI=http://config-service:8080
+      - SPRING_CLOUD_CONFIG_URI=http://config-service:8080
       - SPRING_APPLICATION_NAME=registry-service
       - SERVER_PORT=8761
-      - SPRING_CLOUD_CONFIG_URI=http://config-service:8080 
+      - EUREKA_CLIENT_REGISTER-WITH-EUREKA=false
+      - EUREKA_CLIENT_FETCH-REGISTRY=false
     networks:
       - smartschool-network
     depends_on:
@@ -73,8 +74,8 @@ services:
   rabbitmq-service:
     image: "rabbitmq:3-management"
     ports:
-      - "5772:5672"
-      - "15772:15672"
+      - "5672:5672"
+      - "15672:15672"
     networks:
       - smartschool-network
     healthcheck:
@@ -108,7 +109,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - RABBITMQ_HOST=rabbitmq-service
+      - RABBITMQ_HOST=rabbitmq-service:5672
     networks:
       - smartschool-network
 
@@ -162,4 +163,5 @@ services:
       - /app/node_modules  
     networks:
       - smartschool-network
+    
    
