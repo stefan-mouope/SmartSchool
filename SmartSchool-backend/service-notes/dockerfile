@@ -18,5 +18,8 @@ COPY . .
 # Expose port
 EXPOSE 8002
 
+COPY entrypoint.sh .
+
+RUN chmod +x entrypoint.sh
 # Run server
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8002"]
+ENTRYPOINT ["./entrypoint.sh"]

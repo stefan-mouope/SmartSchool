@@ -8,6 +8,27 @@ networks:
     name: smartschool-network
 
 services:
+
+  postgres:
+    image: postgres:15
+    container_name: postgres-smartschool
+    restart: always
+    environment:
+      POSTGRES_USER: smartschool
+      POSTGRES_PASSWORD: smartschool123
+      POSTGRES_DB: smartschool_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - smartschool-db-data:/var/lib/postgresql/data
+    networks:
+      - smartschool-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smartschool"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   config-service:
     build: ./smartSchool-config/config-service
     ports:
@@ -15,7 +36,6 @@ services:
     environment:
       - SPRING_APPLICATION_NAME=config-service
       - SERVER_PORT=8080
-      # - SPRING_CLOUD_CONFIG_SERVER_GIT_URI=https://github.com/sandjonyves/smartSchool-config.git
       - SPRING_PROFILES_ACTIVE=native
       - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH-LOCATIONS=file:///cloud-config/
     volumes:
@@ -27,7 +47,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-    
+
   registry-service:
     build: ./smartSchool-config/registry-service
     ports:
@@ -54,27 +74,17 @@ services:
     ports:
       - "8081:8081"
     environment:
-      # Config serveur
       - SERVER_PORT=8081
-
-      # Eureka
       - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
       - EUREKA_CLIENT_FETCH_REGISTRY=true
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://registry-service:8761/eureka/
-
-      # Gateway Discovery
       - SPRING_CLOUD_GATEWAY_DISCOVERY_LOCATOR_ENABLED=true
-
-      # CORS Gateway
       - SPRING_CLOUD_GATEWAY_SERVER_WEBFLUX_GLOBALCORS_CORS_CONFIGURATIONS___PATHPATTERN__ALLOWED_ORIGINS=http://localhost:8082,http://frontend-service:8082
       - SPRING_CLOUD_GATEWAY_SERVER_WEBFLUX_GLOBALCORS_CORS_CONFIGURATIONS___PATHPATTERN__ALLOWED_HEADERS=*
       - SPRING_CLOUD_GATEWAY_SERVER_WEBFLUX_GLOBALCORS_CORS_CONFIGURATIONS___PATHPATTERN__ALLOWED_METHODS=GET,POST,PUT,DELETE,OPTIONS,PATCH
       - SPRING_CLOUD_GATEWAY_SERVER_WEBFLUX_GLOBALCORS_CORS_CONFIGURATIONS___PATHPATTERN__ALLOW_CREDENTIALS=true
-
-      # Config Server
       - SPRING_CLOUD_CONFIG_URI=http://config-service:8080
       - SPRING_APPLICATION_NAME=proxy-service
-
     networks:
       - smartschool-network
     depends_on:
@@ -95,12 +105,17 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-  
+
   inscription-service:
     build: ./SmartSchool-backend/inscription-service
     ports:
       - "5000:5000"
-
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=smartschool
+      - DB_PASSWORD=smartschool123
+      - DB_NAME=smartschool_db
     networks:
       - smartschool-network
     depends_on:
@@ -108,13 +123,13 @@ services:
         condition: service_healthy
       rabbitmq-service:
         condition: service_healthy
-
+      postgres:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000"]
       interval: 30s
       timeout: 10s
       retries: 5
-
 
   registration-service:
     build: ./SmartSchool-backend/registration-service
@@ -122,15 +137,20 @@ services:
       - "3000:3000"
     environment:
       - RABBITMQ_HOST=rabbitmq-service:5672
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=smartschool
+      - DB_PASSWORD=smartschool123
+      - DB_NAME=smartschool_db
     networks:
       - smartschool-network
-
     depends_on:
       registry-service:
         condition: service_healthy
       rabbitmq-service:
         condition: service_healthy
-
+      postgres:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 30s
@@ -143,12 +163,19 @@ services:
       - "8002:8002"
     environment:
       - RABBITMQ_HOST=rabbitmq-service
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=smartschool
+      - DB_PASSWORD=smartschool123
+      - DB_NAME=smartschool_db
     networks:
       - smartschool-network
     depends_on:
       registry-service:
         condition: service_healthy
       rabbitmq-service:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
 
   authentification-service:
@@ -157,6 +184,11 @@ services:
       - "8001:8001"
     environment:
       - RABBITMQ_HOST=rabbitmq-service
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=smartschool
+      - DB_PASSWORD=smartschool123
+      - DB_NAME=smartschool_db
     networks:
       - smartschool-network
     depends_on:
@@ -164,16 +196,15 @@ services:
         condition: service_healthy
       registry-service:
         condition: service_healthy
-
+      postgres:
+        condition: service_healthy
 
   frontend-service:
     build: ./SmartSchool-front
     ports:
       - "8082:8082"
     volumes:
-      - ./SmartSchool-front:/app           # monte ton code local
-      - /app/node_modules  
+      - ./SmartSchool-front:/app
+      - /app/node_modules
     networks:
       - smartschool-network
-    
-   

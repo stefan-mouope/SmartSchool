@@ -1,27 +1,15 @@
 import { Sequelize } from "sequelize";
-import path from "path";
-import { fileURLToPath } from "url";
-import { dirname } from "path";
 
-// Obtenir __dirname en ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Crée une instance Sequelize pour SQLite
-const sequelize = new Sequelize({
-  dialect: "sqlite",
-  storage: path.join(__dirname, "../../database.sqlite"), // le fichier local
-  logging: false, // désactive les logs SQL
-});
-
-// Test de connexion (fonction async pour pouvoir utiliser await)
-(async () => {
-  try {
-    await sequelize.authenticate();
-    console.log("✅ Connexion à la base SQLite réussie via Sequelize");
-  } catch (error) {
-    console.error("❌ Impossible de se connecter à la base SQLite :", error);
+const sequelize = new Sequelize(
+  process.env.DB_NAME || "smartschool_db",
+  process.env.DB_USER || "smartschool",
+  process.env.DB_PASSWORD || "smartschool123",
+  {
+    host: process.env.DB_HOST || "postgres",   // nom du service Docker
+    port: Number(process.env.DB_PORT) || 5432,
+    dialect: "postgres",
+    logging: false,
   }
-})();
+);
 
 export default sequelize;
