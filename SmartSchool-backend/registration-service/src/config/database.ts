@@ -1,11 +1,15 @@
 import { Sequelize } from "sequelize";
-import path from "path";
 
-// Crée une instance Sequelize pour SQLite
-const sequelize = new Sequelize({
-  dialect: "sqlite",
-  storage: path.join(__dirname, "../../database.sqlite"), // le fichier local
-  logging: false, // optionnel
-});
+const sequelize = new Sequelize(
+  process.env.DB_NAME || "smartschool_db",
+  process.env.DB_USER || "smartschool",
+  process.env.DB_PASSWORD || "smartschool123",
+  {
+    host: process.env.DB_HOST || "postgres",   // nom du service Docker
+    port: Number(process.env.DB_PORT) || 5432,
+    dialect: "postgres",
+    logging: false,
+  }
+);
 
 export default sequelize;
