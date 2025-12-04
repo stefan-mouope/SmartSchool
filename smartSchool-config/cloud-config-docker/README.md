@@ -1,0 +1,2 @@
+# cloud-config
+# smartSchool-config

@@ -1,0 +1,156 @@
+
+---
+
+##  1. Dockerfiles par service
+
+###  bank-config-service/Dockerfile
+```dockerfile
+
+FROM openjdk:17
+VOLUME /tmp
+ADD target/bank-config-service.jar bank-config-service.jar
+ENTRYPOINT ["java", "-jar", "/bank-config-service.jar"]
+
+```
+
+###  bank-registry-service/Dockerfile
+```dockerfile
+
+FROM openjdk:17
+VOLUME /tmp
+ADD target/bank-registry-service.jar bank-registry-service.jar
+ENTRYPOINT ["java", "-jar", "/bank-registry-service.jar"]
+
+```
+
+###  bank-proxy-service/Dockerfile
+```dockerfile
+FROM openjdk:17
+VOLUME /tmp
+ADD target/bank-proxy-service.jar bank-proxy-service.jar
+ENTRYPOINT ["java", "-jar", "/bank-proxy-service.jar"]
+```
+
+###  bank-user-service/Dockerfile
+```dockerfile
+
+FROM openjdk:17
+VOLUME /tmp
+ADD target/bank-user-service.jar bank-user-service.jar
+ENTRYPOINT ["java", "-jar", "/bank-user-service.jar"]
+
+```
+
+---
+
+##  2. docker-compose.yml
+
+```
+
+version: '3.8'
+
+services:
+  bank-config-service:
+    build: ./bank-config-service
+    container_name: bank-config-service
+    ports:
+      - "8000:8000"
+    environment:
+      - SPRING_APPLICATION_NAME=bank-config-service
+      - SERVER_PORT=8000
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_URI=https://github.com/sandjonyves/repo-config.git
+    networks:
+      - bank-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  bank-registry-service:
+    build: ./bank-registry-service
+    container_name: bank-registry-service
+    ports:
+      - "8761:8761"
+    environment:
+      - SPRING_APPLICATION_NAME=bank-registry-service
+      - SERVER_PORT=8761
+      - SPRING_CLOUD_CONFIG_URI=http://bank-config-service:8000
+      - SPRING_CONFIG_IMPORT=configserver:http://bank-config-service:8000
+    depends_on:
+      bank-config-service:
+        condition: service_healthy
+    networks:
+      - bank-network
+
+  bank-proxy-service:
+    build: ./bank-proxy-service
+    container_name: bank-proxy-service
+    ports:
+      - "8079:8079"
+    environment:
+      - SPRING_APPLICATION_NAME=bank-proxy-service
+      - SERVER_PORT=8079
+      - SPRING_CLOUD_CONFIG_URI=http://bank-config-service:8000
+      - SPRING_CONFIG_IMPORT=configserver:http://bank-config-service:8000
+    depends_on:
+      bank-config-service:
+        condition: service_healthy
+      bank-registry-service:
+        condition: service_started
+    networks:
+      - bank-network
+
+  bank-user-db:
+    image: mysql:8.0
+    container_name: bank-user-db
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=bank_user_db
+
+    ports:
+      - "3307:3307"
+    volumes:
+      - bank_user_data:/var/lib/mysql
+    networks:
+      - bank-network
+
+  bank-user-service:
+    build: ./bank-user-service
+    container_name: bank-user-service
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_APPLICATION_NAME=bank-user-service
+      - SERVER_PORT=8081
+      - SPRING_CLOUD_CONFIG_URI=http://bank-config-service:8000
+      - SPRING_CONFIG_IMPORT=configserver:http://bank-config-service:8000
+    depends_on:
+      bank-config-service:
+        condition: service_healthy
+      bank-registry-service:
+        condition: service_started
+      bank-user-db:
+        condition: service_started
+    networks:
+      - bank-network
+
+networks:
+  bank-network:
+    driver: bridge
+
+volumes:
+  bank_user_data:
+```
+
+---
+
+##  Notes
+
+- supprimer tous les contaniers pour eviter des conflits
+	docker rm -f $(docker ps -a -q)
+	
+- Pour lancer le projet :
+  	docker compose up -d --build
+
