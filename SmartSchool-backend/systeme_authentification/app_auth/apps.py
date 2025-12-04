@@ -3,6 +3,7 @@ import logging
 import os
 import sys
 from django.apps import AppConfig
+from app_auth.consumers.rabbitmq_consumer import RabbitMQConsumer, RabbitMQRegistrationConsumer
 # from .utils.eureka_registration import start_eureka_registration
 import threading
 

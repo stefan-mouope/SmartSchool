@@ -105,7 +105,7 @@ class RabbitMQConsumer(threading.Thread):
         self.queue_name = "auth_verify_queue"
 
     def run(self):
-        host = "rabbitmq" if "docker" in open("/proc/1/cgroup").read() else "localhost"
+        host = "rabbitmq-service"
 
         connection = pika.BlockingConnection(
             pika.ConnectionParameters(
@@ -190,7 +190,7 @@ class RabbitMQRegistrationConsumer(threading.Thread):
         self.queue_name = "registration_queue"
 
     def run(self):
-        host = "rabbitmq" if "docker" in open("/proc/1/cgroup").read() else "localhost"
+        host = "rabbitmq-service" 
 
         connection = pika.BlockingConnection(
             pika.ConnectionParameters(

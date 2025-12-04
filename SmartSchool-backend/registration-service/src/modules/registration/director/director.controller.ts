@@ -34,10 +34,10 @@ export class DirectorController {
         registrie_id: directorCreated.id,
       };
 
-      const rpcResponse = await publishDynamiqueEvent(
-        "inscription_events",
+        const rpcResponse = await publishDynamiqueEvent(
+        "registration_events",
         payload,
-        "inscription.create.director"
+        "registration.create.director"
       );
 
       if (!rpcResponse || !rpcResponse.success) {
