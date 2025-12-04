@@ -16,7 +16,7 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 COPY . .
 
 # Expose port
-EXPOSE 8001
+EXPOSE 8002
 
 COPY entrypoint.sh .
 

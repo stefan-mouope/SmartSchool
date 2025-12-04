@@ -113,9 +113,9 @@ services:
     environment:
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_USER=smartschool
-      - DB_PASSWORD=smartschool123
-      - DB_NAME=smartschool_db
+      - DB_USER=postgres
+      - DB_PASSWORD=root
+      - DB_NAME=smartschool_db1
     networks:
       - smartschool-network
     depends_on:
@@ -139,9 +139,9 @@ services:
       - RABBITMQ_HOST=rabbitmq-service:5672
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_USER=smartschool
-      - DB_PASSWORD=smartschool123
-      - DB_NAME=smartschool_db
+      - DB_USER=postgres
+      - DB_PASSWORD=root
+      - DB_NAME=smartschool_db2
     networks:
       - smartschool-network
     depends_on:
@@ -165,9 +165,9 @@ services:
       - RABBITMQ_HOST=rabbitmq-service
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_USER=smartschool
-      - DB_PASSWORD=smartschool123
-      - DB_NAME=smartschool_db
+      - DB_USER=postgres
+      - DB_PASSWORD=root
+      - DB_NAME=smartschool_db3
     networks:
       - smartschool-network
     depends_on:
@@ -186,9 +186,9 @@ services:
       - RABBITMQ_HOST=rabbitmq-service
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_USER=smartschool
-      - DB_PASSWORD=smartschool123
-      - DB_NAME=smartschool_db
+      - DB_USER=postgres
+      - DB_PASSWORD=root
+      - DB_NAME=smartschool_db4
     networks:
       - smartschool-network
     depends_on:

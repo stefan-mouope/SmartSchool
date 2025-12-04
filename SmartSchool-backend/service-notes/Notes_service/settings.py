@@ -85,9 +85,9 @@ WSGI_APPLICATION = 'Notes_service.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'smartschool_db',
-        'USER': 'smartschool',
-        'PASSWORD': 'smartschool123',
+        'NAME': 'smartschool_db3',
+        'USER': 'postgres',
+        'PASSWORD': 'root',
         'HOST': 'postgres',   # nom du service docker-compose
         'PORT': '5432',
     }

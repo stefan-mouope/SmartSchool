@@ -1,9 +1,9 @@
 import { Sequelize } from "sequelize";
 
 const sequelize = new Sequelize(
-  process.env.DB_NAME || "smartschool_db",
-  process.env.DB_USER || "smartschool",
-  process.env.DB_PASSWORD || "smartschool123",
+  process.env.DB_NAME || "smartschool_db2",
+  process.env.DB_USER || "postgres",
+  process.env.DB_PASSWORD || "root",
   {
     host: process.env.DB_HOST || "postgres",   // nom du service Docker
     port: Number(process.env.DB_PORT) || 5432,
