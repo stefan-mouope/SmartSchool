@@ -1,25 +1,8 @@
-
-
 import json
 import threading
 import logging
 import pika
-from datetime import datetime
 
-from django.contrib.auth import get_user_model
-from django.db import transaction
-
-# JWT
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.exceptions import InvalidToken
-from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
-from rest_framework_simplejwt.settings import api_settings
-
-# Serializers
-from app_auth.serializers import RegisterSerializer
-
-User = get_user_model()
-jwt_auth = JWTAuthentication()
 logger = logging.getLogger(__name__)
 
 # -----------------------------
@@ -32,7 +15,6 @@ ALLOWED_ACTIONS = {
         "create_teacher", "create_classroom", "create_matter",
         "create_academicYear"
     ],
-    # "enseignant": ["create_note", "update_note", "view_notes",'create_inscription'],
     "caissier": ["view_paiements"],
     "secretaire": ["view_eleves"]
 }
@@ -41,6 +23,9 @@ ALLOWED_ACTIONS = {
 # 🔥 FONCTIONS DE REFRESH DES TOKENS
 # ----------------------------------
 def get_refreshed_tokens(refresh_token_str: str) -> dict:
+    from rest_framework_simplejwt.tokens import RefreshToken
+    from rest_framework_simplejwt.settings import api_settings
+
     try:
         refresh = RefreshToken(refresh_token_str)
         refresh.check_exp()
@@ -57,6 +42,11 @@ def get_refreshed_tokens(refresh_token_str: str) -> dict:
 
 
 def verify_and_refresh_token(access_token: str, refresh_token: str = None) -> dict:
+    from rest_framework_simplejwt.authentication import JWTAuthentication
+    from rest_framework_simplejwt.exceptions import InvalidToken
+
+    jwt_auth = JWTAuthentication()
+
     try:
         validated = jwt_auth.get_validated_token(access_token)
         user = jwt_auth.get_user(validated)
@@ -80,7 +70,6 @@ def verify_and_refresh_token(access_token: str, refresh_token: str = None) -> di
             return {"valid": False, "error": "Refresh échoué"}
 
         new_access = refreshed["access_token"]
-
         validated = jwt_auth.get_validated_token(new_access)
         user = jwt_auth.get_user(validated)
         payload = validated.payload
@@ -115,7 +104,6 @@ class RabbitMQConsumer(threading.Thread):
             )
         )
         channel = connection.channel()
-
         channel.exchange_declare(exchange="inscription_events", exchange_type="topic", durable=False)
         channel.queue_declare(queue=self.queue_name, durable=True)
         channel.queue_bind(exchange="inscription_events", queue=self.queue_name, routing_key="auth.verify")
@@ -131,14 +119,12 @@ class RabbitMQConsumer(threading.Thread):
 
                 result = verify_and_refresh_token(access, refresh)
 
-                # ❌ Token invalide
                 if not result["valid"]:
                     self.send_rpc_response(ch, properties, {"valid": False, "error": result["error"]})
                     return
 
                 role = result.get("role")
 
-                # ❌ Action non autorisée
                 if action not in ALLOWED_ACTIONS.get(role, []):
                     self.send_rpc_response(ch, properties, {
                         "valid": False,
@@ -146,7 +132,6 @@ class RabbitMQConsumer(threading.Thread):
                     })
                     return
 
-                # ✅ Réponse OK
                 response = {
                     "valid": True,
                     "user_id": result["user_id"],
@@ -190,8 +175,11 @@ class RabbitMQRegistrationConsumer(threading.Thread):
         self.queue_name = "registration_queue"
 
     def run(self):
-        host = "rabbitmq-service" 
+        import pika
+        import json
+        import os
 
+        host = "rabbitmq-service"
         connection = pika.BlockingConnection(
             pika.ConnectionParameters(
                 host=host,
@@ -200,14 +188,15 @@ class RabbitMQRegistrationConsumer(threading.Thread):
             )
         )
         channel = connection.channel()
-
         channel.exchange_declare(exchange="registration_events", exchange_type="topic", durable=True)
         channel.queue_declare(queue=self.queue_name, durable=True)
-        channel.queue_bind(exchange="registration_events", queue=self.queue_name, routing_key="create_director")
-
-        print("🔥 RegistrationConsumer RabbitMQ démarré... (create_director)")
+        channel.queue_bind(exchange="registration_events", queue=self.queue_name, routing_key="registration.create.*")
 
         def callback(ch, method, properties, body):
+            # ⚠️ Lazy imports ici, pas au module
+            from django.db import transaction
+            from app_auth.serializers import RegisterSerializer
+
             payload = json.loads(body)
 
             try:
@@ -215,13 +204,7 @@ class RabbitMQRegistrationConsumer(threading.Thread):
                     serializer = RegisterSerializer(data=payload)
                     serializer.is_valid(raise_exception=True)
                     user = serializer.save()
-
-                    response = {
-                        "success": True,
-                        "message": f"Compte {user.role} créé",
-                        "user": serializer.data
-                    }
-
+                    response = {"success": True, "user": serializer.data}
             except Exception as e:
                 response = {"success": False, "error": str(e)}
 
@@ -232,7 +215,6 @@ class RabbitMQRegistrationConsumer(threading.Thread):
                     properties=pika.BasicProperties(correlation_id=properties.correlation_id),
                     body=json.dumps(response)
                 )
-
             ch.basic_ack(delivery_tag=method.delivery_tag)
 
         channel.basic_consume(queue=self.queue_name, on_message_callback=callback)
