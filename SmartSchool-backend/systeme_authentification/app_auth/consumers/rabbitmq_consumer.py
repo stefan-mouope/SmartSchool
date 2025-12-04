@@ -105,7 +105,7 @@ class RabbitMQConsumer(threading.Thread):
         self.queue_name = "auth_verify_queue"
 
     def run(self):
-        host = "rabbitmq" if "docker" in open("/proc/1/cgroup").read() else "localhost"
+        host = "rabbitmq-service"
 
         connection = pika.BlockingConnection(
             pika.ConnectionParameters(
@@ -191,7 +191,9 @@ class RabbitMQRegistrationConsumer(threading.Thread):
         self.queue_name = "registration_queue"
 
     def run(self):
+        # Détection Docker ou local
         host = "rabbitmq" if "docker" in open("/proc/1/cgroup").read() else "localhost"
+        print(f"[Consumer] Connexion à RabbitMQ sur {host}:5672")
 
         connection = pika.BlockingConnection(
             pika.ConnectionParameters(
@@ -215,6 +217,7 @@ class RabbitMQRegistrationConsumer(threading.Thread):
 
         # Callback défini à l'intérieur de run() pour avoir accès à channel
         def callback(ch, method, properties, body):
+            print("[Consumer] Message reçu:", body)
             payload = json.loads(body)
 
             try:
@@ -222,13 +225,11 @@ class RabbitMQRegistrationConsumer(threading.Thread):
                     serializer = RegisterSerializer(data=payload)
                     serializer.is_valid(raise_exception=True)
                     user = serializer.save()
-
                     response = {
                         "success": True,
                         "message": f"Compte {user.role} créé",
                         "user": serializer.data
                     }
-
             except Exception as e:
                 response = {"success": False, "error": str(e)}
 
@@ -240,6 +241,7 @@ class RabbitMQRegistrationConsumer(threading.Thread):
                     properties=pika.BasicProperties(correlation_id=properties.correlation_id),
                     body=json.dumps(response)
                 )
+                print(f"[Consumer] Réponse envoyée à {properties.reply_to} avec correlation_id {properties.correlation_id}")
 
             ch.basic_ack(delivery_tag=method.delivery_tag)
 

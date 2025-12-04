@@ -1,18 +1,15 @@
-# Base image
-FROM node:20-alpine
+FROM node:20-slim
 
-# Set work directory
 WORKDIR /app
 
-# Copy package files and install dependencies
 COPY package*.json ./
+
 RUN npm install
 
-# Copy project
 COPY . .
 
-# Expose port
+RUN npm run build 
+
 EXPOSE 3000
 
-# Run server
 CMD ["npm", "start"]

@@ -1,14 +1,7 @@
-# Utilise une image de base avec Java
-FROM eclipse-temurin:17-jdk-jammy
+FROM eclipse-temurin:17-jdk
 
-# Définit le répertoire de travail
 WORKDIR /app
 
-# Copie le fichier JAR dans l'image
 COPY target/config-service.jar config-service.jar
 
-# Expose le port sur lequel l'application s'exécutera
-EXPOSE 8080
-
-# Définit la commande pour lancer l'application au démarrage du conteneur
-ENTRYPOINT ["java", "-jar", "config-service.jar"]
+ENTRYPOINT [ "java", "-jar", "config-service.jar" ]

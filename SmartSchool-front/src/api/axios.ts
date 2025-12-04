@@ -1,11 +1,13 @@
 import axios from "axios";
 
-export const BASE_REGISTRATION = "/registration-service"
-export const BASE_NOTE_SERVICE = "/note-service"
-export const BASE_AUTH_SERVICE = "/auth-service"
-export const BASE_INSCRIPTION_SERVICE = "/inscription-service"
+export const BASE_REGISTRATION = "/REGISTRATION-SERVICE"
+export const BASE_NOTE_SERVICE = "/NOTE-SERVICE"
+export const BASE_AUTH_SERVICE = "/AUTH-SERVICE"
+export const BASE_INSCRIPTION_SERVICE = "/INSCRIPTION-SERVICE"
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8081";
+const HOST_NAME = 'proxy-service'
+// const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || `http://${HOST_NAME}:8081`;
 
 export const api = axios.create({
   baseURL: API_BASE_URL,

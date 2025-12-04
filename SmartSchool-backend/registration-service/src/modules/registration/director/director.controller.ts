@@ -1,67 +1,79 @@
 import { Request, Response } from "express";
 import { DirectorService } from "./director.service";
 import { publishDynamiqueEvent } from "../events/rabbitmq";
+
 const directorService = new DirectorService();
 
 export class DirectorController {
-  // Créer un directeur
-    async create(req: Request, res: Response) {
-    let directorCreated = null;
+  // ---------------------------------------------------------
+  // 🧑‍💼 Créer un directeur
+  // ---------------------------------------------------------
+  async create(req: Request, res: Response) {
+    let directorCreated: any | null = null;
 
     try {
       // Générer automatiquement le username
       const username = `${req.body.first_name.toLowerCase()}.${req.body.last_name.toLowerCase()}`;
 
-      
-
-      // 1) Créer d'abord le directeur dans ta base Node
+      // 1) Création dans le microservice Node
       directorCreated = await directorService.create({
         ...req.body,
-        username: username,
+        username,
       });
-// Payload envoyé au microservice Django
+
+      console.log("📌 Directeur créé côté Node :", directorCreated);
+
+      // Sécurité TypeScript → si pour une raison inconnue c'est null
+      if (!directorCreated) {
+        return res.status(500).json({
+          success: false,
+          error: "La création du directeur a échoué côté Node.",
+        });
+      }
+
+      // Payload destiné à Django
       const payload = {
         ...req.body,
         role: "directeur",
-        username: username,
-        registrie_id:directorCreated ? directorCreated.id : undefined,
+        username,
+        registrie_id: directorCreated.id, // ici OK (non-null)
       };
-      console.log("📌 Directeur créé côté Node :", directorCreated);
 
-      // 2) Envoyer l’évènement RPC à Django (création du compte utilisateur)
+      console.log('djsahdhsajhdjsahdjhasjdhkashdkjashdkhaskhdkahdkhasdkjashdjas')
+      // 2) RPC vers Django
       const rpcResponse = await publishDynamiqueEvent(
-        "registration_events",
+        "inscription_events",
         payload,
-        "registration.create.director"
+        "create_director"
       );
 
       console.log("📥 Réponse RPC Django :", rpcResponse);
 
-      // 3) Si Django renvoie une erreur, rollback (supprimer le directeur Node)
-      if (!rpcResponse.success) {
-        console.log("❌ Django a échoué → suppression du directeur Node");
+      // 3) Gestion des erreurs RPC
+      if (!rpcResponse || !rpcResponse.success) {
+        console.log("❌ Django a échoué → rollback directeur Node");
 
-        await directorService.delete(directorCreated.id);
+        await directorService.delete(directorCreated.id); // plus d'erreur TS ici
 
         return res.status(400).json({
           success: false,
-          error: rpcResponse.error,
+          error: rpcResponse?.error || "Erreur inconnue Django",
         });
       }
 
-      // 4) Tout est OK → renvoyer la réponse réussie
+      // 4) Réponse finale OK
       return res.status(201).json({
         success: true,
         message: "Directeur créé avec succès",
-        account: rpcResponse.user,      // informations du compte Django
-        director: directorCreated,      // données du directeur Node
+        account: rpcResponse.user,
+        director: directorCreated,
       });
 
     } catch (error: any) {
       console.error("❌ Erreur controller create_director:", error);
 
-      // Rollback en cas d’exception
-      if (directorCreated) {
+      // Rollback si Node a déjà créé avant l’erreur
+      if (directorCreated !== null) {
         await directorService.delete(directorCreated.id);
       }
 
@@ -69,9 +81,9 @@ export class DirectorController {
     }
   }
 
-
-
-  // Récupérer tous les directeurs
+  // ---------------------------------------------------------
+  // 📌 Récupérer tous les directeurs
+  // ---------------------------------------------------------
   async findAll(req: Request, res: Response) {
     try {
       const directors = await directorService.findAll();
@@ -81,7 +93,9 @@ export class DirectorController {
     }
   }
 
-  // Récupérer un directeur par ID
+  // ---------------------------------------------------------
+  // 🔍 Récupérer un directeur par ID
+  // ---------------------------------------------------------
   async findById(req: Request, res: Response) {
     try {
       const id = parseInt(req.params.id);
@@ -92,7 +106,9 @@ export class DirectorController {
     }
   }
 
-  // Récupérer les directeurs par école
+  // ---------------------------------------------------------
+  // 🏫 Récupérer les directeurs par école
+  // ---------------------------------------------------------
   async findBySchool(req: Request, res: Response) {
     try {
       const schoolId = parseInt(req.params.schoolId);
@@ -103,7 +119,9 @@ export class DirectorController {
     }
   }
 
-  // Mettre à jour un directeur
+  // ---------------------------------------------------------
+  // ✏️ Mettre à jour un directeur
+  // ---------------------------------------------------------
   async update(req: Request, res: Response) {
     try {
       const id = parseInt(req.params.id);
@@ -114,7 +132,9 @@ export class DirectorController {
     }
   }
 
-  // Supprimer un directeur
+  // ---------------------------------------------------------
+  // ❌ Supprimer un directeur
+  // ---------------------------------------------------------
   async delete(req: Request, res: Response) {
     try {
       const id = parseInt(req.params.id);
@@ -125,5 +145,3 @@ export class DirectorController {
     }
   }
 }
-
-

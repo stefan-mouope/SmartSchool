@@ -4,11 +4,14 @@ import requests
 import socket
 import atexit
 
+
+
 # -------------------------
 # Configuration du service
 # -------------------------
 APP_NAME = "NOTE-SERVICE"         # Nom du service pour Gateway
 INSTANCE_PORT = 8002               # Port de ton service Django
+HOST_NAME='registry-service'
 
 def get_host_ip():
     """Retourne l'IP réelle de la machine accessible par Eureka/Gateway."""
@@ -26,7 +29,7 @@ def get_host_ip():
 HOST_IP = get_host_ip()
 INSTANCE_ID = f"{HOST_IP}:{APP_NAME}:{INSTANCE_PORT}"  # ID unique Eureka
 
-EUREKA_SERVER = "http://localhost:8761/eureka/apps"
+EUREKA_SERVER = f"http://{HOST_NAME}:8761/eureka/apps"
 
 # -------------------------
 # Fonctions Eureka

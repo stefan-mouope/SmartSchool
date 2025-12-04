@@ -7,6 +7,8 @@ from typing import Any
 import time
 logger = logging.getLogger(__name__)
 
+RABBITMQ_HOST= 'rabbitmq-service'
+
 class RabbitMQRPCClient:
     def __init__(self):
         self.connection = None
@@ -18,7 +20,7 @@ class RabbitMQRPCClient:
     def _connect(self):
         """Connexion + création de la callback queue"""
         self.connection = pika.BlockingConnection(
-            pika.ConnectionParameters(host="localhost")
+            pika.ConnectionParameters(host=RABBITMQ_HOST)
         )
         self.channel = self.connection.channel()
 

@@ -22,7 +22,8 @@
       },
     },
     eureka: {
-      host: "localhost", // Adresse du serveur Eureka
+      host:"registry-service",
+      // host: "localhost", // Adresse du serveur Eureka
       port: 8761,        // Port de ton serveur Eureka
       servicePath: "/eureka/apps/",
     },

@@ -6,52 +6,58 @@ import { Director } from "../models";
 const teacherService = new TeacherService();
 
 export class TeacherController {
-  // Créer un professeur
+
   async create(req: Request, res: Response) {
     try {
-      // Générer automatiquement le username
       const username = `${req.body.first_name.toLowerCase()}.${req.body.last_name.toLowerCase()}`;
-      const newTeacher = await teacherService.create(req.body);
-      const existingDirector = await Director.findOne({ where: {id: newTeacher?.id } });
 
-      // Préparer le payload pour Django
+      const newTeacher = await teacherService.create(req.body);
+
+      const teacherId = newTeacher?.id;
+
+      if (!teacherId) {
+        return res.status(500).json({
+          error: "Impossible de créer le professeur : ID non généré."
+        });
+      }
+
+      // Vérifier si un directeur existe (si utile)
+      const existingDirector = await Director.findOne({
+        where: { id: teacherId }
+      });
+
       const payload = {
         ...req.body,
         role: "enseignant",
-        username: username,
-        registrie_id:newTeacher ? newTeacher.id : null,
+        username,
+        registrie_id: teacherId,
       };
 
-
-      // Publier l'événement RPC et attendre la réponse Django
       const rpcResponse = await publishDynamiqueEvent(
         "registration_events",
         payload,
-        "registration.create.teacher" // routing key
+        "registration.create.teacher"
       );
 
       console.log("📥 Réponse RPC Django :", rpcResponse);
 
       if (!rpcResponse.success) {
-        await teacherService.delete(newTeacher?.id);
+        await teacherService.delete(teacherId);
         return res.status(400).json({ error: rpcResponse.error });
       }
 
-      // Créer l'enseignant dans le microservice Node
-
-      // Réponse finale
-      res.status(201).json({
+      return res.status(201).json({
         success: true,
         user_system: rpcResponse.user,
         teacher_service: newTeacher,
       });
+
     } catch (error: any) {
       console.error("❌ Erreur controller create_teacher:", error);
       res.status(400).json({ error: error.message });
     }
   }
 
-  // Récupérer tous les professeurs
   async findAll(req: Request, res: Response) {
     try {
       const teachers = await teacherService.findAll();
@@ -61,10 +67,9 @@ export class TeacherController {
     }
   }
 
-  // Récupérer un professeur par ID
   async findById(req: Request, res: Response) {
     try {
-      const id = parseInt(req.params.id);
+      const id = req.params.id; // 🔥 ID string
       const teacher = await teacherService.findById(id);
       res.status(200).json(teacher);
     } catch (error: any) {
@@ -72,7 +77,6 @@ export class TeacherController {
     }
   }
 
-  // Récupérer les professeurs par école
   async findBySchool(req: Request, res: Response) {
     try {
       const schoolId = parseInt(req.params.schoolId);
@@ -83,10 +87,9 @@ export class TeacherController {
     }
   }
 
-  // Mettre à jour un professeur
   async update(req: Request, res: Response) {
     try {
-      const id = parseInt(req.params.id);
+      const id = req.params.id; // 🔥 string
       const teacher = await teacherService.update(id, req.body);
       res.status(200).json(teacher);
     } catch (error: any) {
@@ -94,10 +97,9 @@ export class TeacherController {
     }
   }
 
-  // Supprimer un professeur
   async delete(req: Request, res: Response) {
     try {
-      const id = parseInt(req.params.id);
+      const id = req.params.id;
       const result = await teacherService.delete(id);
       res.status(200).json(result);
     } catch (error: any) {
@@ -105,5 +107,3 @@ export class TeacherController {
     }
   }
 }
-
-

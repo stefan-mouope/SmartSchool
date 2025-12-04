@@ -1,153 +1,165 @@
-version: '3.8'
+version: "3.8"
+
+volumes:
+  smartschool-db-data:
 
 networks:
-  bank-network:
-    driver: bridge
+  smartschool-network:
+    name: smartschool-network
 
 services:
-  # ------------------------
-  # Spring Boot Services
-  # ------------------------
-  bank-config-service:
-    build: ./smartSchool-config/bank-config-service
-    container_name: bank-config-service
+  config-service:
+    build: ./smartSchool-config/config-service
     ports:
-      - "8000:8000"
+      - "9000:8080"
     environment:
-      - SPRING_APPLICATION_NAME=bank-config-service
-      - SERVER_PORT=8000
-      - SPRING_CLOUD_CONFIG_SERVER_GIT_URI=https://github.com/sandjonyves/repo-config.git
+      - SPRING_APPLICATION_NAME=config-service
+      - SERVER_PORT=8080
+      # - SPRING_CLOUD_CONFIG_SERVER_GIT_URI=https://github.com/sandjonyves/smartSchool-config.git
+      - SPRING_PROFILES_ACTIVE=native
+      - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH-LOCATIONS=file:///cloud-config/
+    volumes:
+      - ./smartSchool-config/cloud-config:/cloud-config
     networks:
-      - bank-network
+      - smartschool-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/actuator/health"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
-  bank-registry-service:
-    build: ./smartSchool-config/bank-registry-service
-    container_name: bank-registry-service
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    
+  registry-service:
+    build: ./smartSchool-config/registry-service
     ports:
-      - "8761:8761"
+      - "9001:8761"
     environment:
-      - SPRING_APPLICATION_NAME=bank-registry-service
+      - SPING_CLOUD_CONFIG_URI=http://config-service:8080
+      - SPRING_APPLICATION_NAME=registry-service
       - SERVER_PORT=8761
-      - SPRING_CLOUD_CONFIG_URI=http://bank-config-service:8000
-      - SPRING_CONFIG_IMPORT=configserver:http://bank-config-service:8000
-    depends_on:
-      bank-config-service:
-        condition: service_healthy
+      - SPRING_CLOUD_CONFIG_URI=http://config-service:8080 
     networks:
-      - bank-network
+      - smartschool-network
+    depends_on:
+      config-service:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
-  bank-proxy-service:
-    build: ./smartSchool-config/bank-proxy-service
-    container_name: bank-proxy-service
+  proxy-service:
+    build: ./smartSchool-config/proxy-service
     ports:
-      - "8079:8079"
+      - "8081:8081"
     environment:
-      - SPRING_APPLICATION_NAME=bank-proxy-service
-      - SERVER_PORT=8079
-      - SPRING_CLOUD_CONFIG_URI=http://bank-config-service:8000
-      - SPRING_CONFIG_IMPORT=configserver:http://bank-config-service:8000
+      - SPRING_CLOUD_CONFIG_URI=http://config-service:8080
+      - SPRING_APPLICATION_NAME=proxy-service
+      - SERVER_PORT=8081
+
+      - SPRING_CLOUD_GATEWAY_SERVER_WEBFLUX_GLOBALCORS_CORS-CONFIGURATIONS___PATHPATTERN__ALLOWED-ORIGINS=http://localhost:8082,http://frontend-service:8082
+      - SPRING_CLOUD_GATEWAY_SERVER_WEBFLUX_GLOBALCORS_CORS-CONFIGURATIONS___PATHPATTERN__ALLOWED-HEADERS=*
+      - SPRING_CLOUD_GATEWAY_SERVER_WEBFLUX_GLOBALCORS_CORS-CONFIGURATIONS___PATHPATTERN__ALLOWED-METHODS=GET,POST,PUT,DELETE,OPTIONS,PATCH
+      - SPRING_CLOUD_GATEWAY_SERVER_WEBFLUX_GLOBALCORS_CORS-CONFIGURATIONS___PATHPATTERN__ALLOW-CREDENTIALS=true
+
+    networks:
+      - smartschool-network
     depends_on:
-      bank-config-service:
+      config-service:
         condition: service_healthy
-      bank-registry-service:
+      registry-service:
         condition: service_healthy
-    networks:
-      - bank-network
-
-  # registration-service-spring:
-  #   build: ./SmartSchool-backend/registration-service-sprin
-  #   container_name: registration-service-spring
-  #   ports:
-  #     - "8081:8080"
-  #   environment:
-  #     - SPRING_CLOUD_CONFIG_URI=http://bank-config-service:8000
-  #   depends_on:
-  #     bank-config-service:
-  #       condition: service_healthy
-  #     bank-registry-service:
-  #       condition: service_healthy
-  #   networks:
-  #     - bank-network
-
-  # ------------------------
-  # Django Services
-  # ------------------------
-  service-notes:
-    build: ./SmartSchool-backend/service-notes
-    container_name: service-notes
-    command: bash -c "python manage.py runserver 0.0.0.0:8001"
+  
+  rabbitmq-service:
+    image: "rabbitmq:3-management"
     ports:
-      - "8001:8001"
-    volumes:
-      - ./SmartSchool-backend/service-notes:/app
+      - "5772:5672"
+      - "15772:15672"
     networks:
-      - bank-network
-
-  systeme-authentification:
-    build: ./SmartSchool-backend/systeme_authentification
-    container_name: systeme-authentification
-    command: python manage.py runserver 0.0.0.0:8002
-    ports:
-      - "8002:8002"
-    volumes:
-      - ./SmartSchool-backend/systeme_authentification:/app
-    networks:
-      - bank-network
-
-  # ------------------------
-  # Express.js Services
-  # ------------------------
+      - smartschool-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+  
   inscription-service:
     build: ./SmartSchool-backend/inscription-service
-    container_name: inscription-service
     ports:
-      - "3001:3000"
-    command: npm start
-    volumes:
-      - ./SmartSchool-backend/inscription-service:/app
-    networks:
-      - bank-network
-    depends_on:
-      - service-notes
-      - systeme-authentification
+      - "5000:5000"
 
-  registration-service-express:
+    networks:
+      - smartschool-network
+    depends_on:
+      registry-service:
+        condition: service_healthy
+      rabbitmq-service:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+
+  registration-service:
     build: ./SmartSchool-backend/registration-service
-    container_name: registration-service-express
-    ports:
-      - "3002:3000"
-    command: npm start
-    volumes:
-      - ./SmartSchool-backend/registration-service:/app
-    networks:
-      - bank-network
-    depends_on:
-      - service-notes
-      - systeme-authentification
-
-  # ------------------------
-  # Frontend React
-  # ------------------------
-  smartschool-front:
-    container_name: smartschool-front
-    build: ./SmartSchool-front
     ports:
       - "3000:3000"
-    command: npm start
-    volumes:
-      - ./SmartSchool-front:/app
+    environment:
+      - RABBITMQ_HOST=rabbitmq-service
     networks:
-      - bank-network
+      - smartschool-network
+
     depends_on:
-      - inscription-service
-      - registration-service-express
+      registry-service:
+        condition: service_healthy
+      rabbitmq-service:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  service-notes:
+    build: ./SmartSchool-backend/service-notes
+    ports:
+      - "8002:8002"
+    environment:
+      - RABBITMQ_HOST=rabbitmq-service
+    networks:
+      - smartschool-network
+    depends_on:
+      registry-service:
+        condition: service_healthy
+      rabbitmq-service:
+        condition: service_healthy
+
+  authentification-service:
+    build: ./SmartSchool-backend/systeme_authentification
+    ports:
+      - "8001:8001"
+    environment:
+      - RABBITMQ_HOST=rabbitmq-service
+    networks:
+      - smartschool-network
+    depends_on:
+      rabbitmq-service:
+        condition: service_healthy
+      registry-service:
+        condition: service_healthy
+
+
+  frontend-service:
+    build: ./SmartSchool-front
+    ports:
+      - "8082:8082"
+    volumes:
+      - ./SmartSchool-front:/app           # monte ton code local
+      - /app/node_modules  
+    networks:
+      - smartschool-network
+   
