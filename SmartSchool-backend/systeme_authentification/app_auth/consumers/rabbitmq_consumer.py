@@ -129,6 +129,11 @@ class RabbitMQConsumer(threading.Thread):
                 refresh = data.get("refresh_token")
                 action = data.get("action", "")
 
+                print(f"[Consumer] Message reçu - Routing Key: {method.routing_key}")
+                print(f"[Consumer] Reply To: {properties.reply_to}")
+                print(f"[Consumer] Correlation ID: {properties.correlation_id}")
+                print(f"[Consumer] Body: {body}")
+
                 result = verify_and_refresh_token(access, refresh)
 
                 # ❌ Token invalide

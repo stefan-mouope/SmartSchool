@@ -81,7 +81,7 @@ export const getReplyQueue = (): Replies.AssertQueue => {
 export const callRpc = async (
   routingKey: string,
   data: any,
-  timeoutMs = 10000
+  timeoutMs = 30000
 ): Promise<any> => {
   const correlationId = uuidv4();
 
