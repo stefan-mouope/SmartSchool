@@ -1,12 +1,11 @@
-
 // src/pages/NotesPage.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Upload, Download } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { getAppreciation, getAppreciationColor } from '@/utils/calculations';
-import { api, BASE_INSCRIPTION_SERVICE, BASE_REGISTRATION} from '@/api/axios';
-import { saveOrUpdateNote, updateNote, type NotePayload } from '@/api/noteService';
+import { api, BASE_INSCRIPTION_SERVICE, BASE_REGISTRATION } from '@/api/axios';
+import { getNotesByEleveAndMatiere, saveOrUpdateNote, type NotePayload } from '@/api/noteService';
 import { useAuthStore } from '@/store/authStore';
 
 type Note = {
@@ -14,7 +13,7 @@ type Note = {
   nom: string;
   matricule: string;
   note: string;
-  interrogation: string;
+  interrogation?: string;
   appreciation: string;
 };
 
@@ -32,49 +31,43 @@ type AcademicYear = {
 type Classroom = { id: number; name: string };
 type Matiere = { id: number; name: string };
 
-// Fonction pour formater proprement l'année scolaire
 const formatAcademicYear = (year: AcademicYear): string => {
-  console.log(year)
   if (year.name) return year.name;
   if (year.label) return year.label;
-
   const start = new Date(year.start_date || year.startDate || '');
   const end = new Date(year.end_date || year.endDate || '');
-
   if (isNaN(start.getTime()) || isNaN(end.getTime())) return `Année ${year.id}`;
-
   const startYear = start.getFullYear();
   const endYear = end.getFullYear();
-
-  // Si l'année commence en août/septembre → 2025-2026
   return start.getMonth() >= 7 ? `${startYear}-${endYear}` : `${startYear - 1}-${startYear}`;
 };
 
 export const NotesPage: React.FC = () => {
-  const school_id = useAuthStore(state => state.school_id)
-  const schoolId = school_id; 
+  const school_id = useAuthStore(state => state.school_id);
+  const schoolId = school_id;
 
-  // États de données
   const [years, setYears] = useState<AcademicYear[]>([]);
   const [classes, setClasses] = useState<Classroom[]>([]);
   const [matieres, setMatieres] = useState<Matiere[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
 
-  // États de sélection
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedClass, setSelectedClass] = useState<number | null>(null);
   const [selectedMatiere, setSelectedMatiere] = useState<number | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState('sequence1');
 
-  // États de chargement
   const [loadingYears, setLoadingYears] = useState(true);
   const [loadingClasses, setLoadingClasses] = useState(true);
   const [loadingMatieres, setLoadingMatieres] = useState(true);
   const [loadingStudents, setLoadingStudents] = useState(false);
 
+  // cache local persistant dans la session: key = `${inscriptionId}-${matiereId}-${period}`
+  const savedCellsRef = useRef<Map<string, string>>(new Map());
 
+  // états UI pour loader par cellule
+  const [savingCells, setSavingCells] = useState<Set<string>>(new Set());
 
-  // --- RESTAURATION / PERSISTENCE localStorage ---
+  // --- localStorage restore for filters (unchanged) ---
   useEffect(() => {
     try {
       const savedYear = localStorage.getItem("selectedYear");
@@ -87,34 +80,14 @@ export const NotesPage: React.FC = () => {
       if (savedMatiere) setSelectedMatiere(Number(savedMatiere));
       if (savedPeriod) setSelectedPeriod(savedPeriod);
     } catch (e) {
-      // localStorage peut échouer en environnement fermé — on ne veut pas casser l'app
       console.warn("Impossible d'accéder à localStorage :", e);
     }
   }, []);
 
-  useEffect(() => {
-    try {
-      if (selectedYear !== null) localStorage.setItem("selectedYear", String(selectedYear));
-    } catch {}
-  }, [selectedYear]);
-
-  useEffect(() => {
-    try {
-      if (selectedClass !== null) localStorage.setItem("selectedClass", String(selectedClass));
-    } catch {}
-  }, [selectedClass]);
-
-  useEffect(() => {
-    try {
-      if (selectedMatiere !== null) localStorage.setItem("selectedMatiere", String(selectedMatiere));
-    } catch {}
-  }, [selectedMatiere]);
-
-  useEffect(() => {
-    try {
-      if (selectedPeriod) localStorage.setItem("selectedPeriod", selectedPeriod);
-    } catch {}
-  }, [selectedPeriod]);
+  useEffect(() => { try { if (selectedYear !== null) localStorage.setItem("selectedYear", String(selectedYear)); } catch {} }, [selectedYear]);
+  useEffect(() => { try { if (selectedClass !== null) localStorage.setItem("selectedClass", String(selectedClass)); } catch {} }, [selectedClass]);
+  useEffect(() => { try { if (selectedMatiere !== null) localStorage.setItem("selectedMatiere", String(selectedMatiere)); } catch {} }, [selectedMatiere]);
+  useEffect(() => { try { if (selectedPeriod) localStorage.setItem("selectedPeriod", selectedPeriod); } catch {} }, [selectedPeriod]);
 
   // 1. Charger années + année courante
   useEffect(() => {
@@ -127,29 +100,20 @@ export const NotesPage: React.FC = () => {
         ]);
 
         const rawYears = (allRes.data?.data || allRes.data || []);
-        const formattedYears = rawYears.map((y: any) => ({
-          ...y,
-          displayName: formatAcademicYear(y)
-        }));
-
+        const formattedYears = rawYears.map((y: any) => ({ ...y, displayName: formatAcademicYear(y) }));
         setYears(formattedYears);
 
         const current = currentRes.data;
         const savedYear = localStorage.getItem("selectedYear");
-        // si l'utilisateur a déjà une sélection sauvegardée, ne pas écraser
-        if (!savedYear && current?.id) {
-          setSelectedYear(current.id);
-          console.log("Année courante chargée :", formatAcademicYear(current));
-        }
-      } catch (err: any) {
-        console.error("Erreur années :", err.response?.data || err);
+        if (!savedYear && current?.id) setSelectedYear(current.id);
+      } catch (err) {
+        console.error("Erreur années :", err);
       } finally {
         setLoadingYears(false);
       }
     };
-
     loadYears();
-  }, []);
+  }, [schoolId]);
 
   // 2. Charger classes
   useEffect(() => {
@@ -160,20 +124,16 @@ export const NotesPage: React.FC = () => {
         const data = (res.data?.data || res.data || []);
         setClasses(data);
 
-        // si aucune classe sélectionnée (ni via localStorage), choisir la première
         const savedClass = localStorage.getItem("selectedClass");
-        if (data.length > 0 && !savedClass && !selectedClass) {
-          setSelectedClass(data[0].id);
-        }
+        if (data.length > 0 && !savedClass && !selectedClass) setSelectedClass(data[0].id);
       } catch (err) {
         console.error("Erreur classes :", err);
       } finally {
         setLoadingClasses(false);
       }
     };
-
     loadClasses();
-  }, []);
+  }, [schoolId]);
 
   // 3. Charger matières
   useEffect(() => {
@@ -185,75 +145,89 @@ export const NotesPage: React.FC = () => {
         setMatieres(data);
 
         const savedMatiere = localStorage.getItem("selectedMatiere");
-        if (data.length > 0 && !savedMatiere && !selectedMatiere) {
-          setSelectedMatiere(data[0].id);
-        }
+        if (data.length > 0 && !savedMatiere && !selectedMatiere) setSelectedMatiere(data[0].id);
       } catch (err) {
         console.error("Erreur matières :", err);
       } finally {
         setLoadingMatieres(false);
       }
     };
-
     loadMatieres();
-  }, []);
+  }, [schoolId]);
 
-  // 4. Charger élèves + notes
-  useEffect(() => {
-    if (!selectedYear || !selectedClass || !selectedMatiere) {
-      setNotes([]);
-      return;
-    }
+  // utilitaire: build key
+  const buildKey = (inscriptionId: number, matiereId: number | null, period: string) => `${inscriptionId}-${matiereId ?? 'null'}-${period}`;
 
-    const fetchStudents = async () => {
-      setLoadingStudents(true);
-      try {
-        const res = await api.get(
-          `${BASE_INSCRIPTION_SERVICE}/api/inscriptions/class/${selectedClass}/year/${selectedYear}/students`
-        );
+// 4. Charger élèves + notes — version corrigée et robuste
+useEffect(() => {
+  if (!selectedYear || !selectedClass || !selectedMatiere) {
+    setNotes([]);
+    return;
+  }
 
-        const students = res.data?.data || [];
+  const fetchStudentsAndNotes = async () => {
+    setLoadingStudents(true);
+    try {
+      // 1. Charger les élèves de la classe
+      const res = await api.get(
+        `${BASE_INSCRIPTION_SERVICE}/api/inscriptions/class/${selectedClass}/year/${selectedYear}/students`
+      );
 
-        // DEBUG léger — utile si tu veux vérifier les données reçues
-        console.debug('Données reçues pour la classe/année/matiere :', {
-          selectedClass,
-          selectedYear,
-          selectedMatiere,
-          totalStudents: students.length
-        });
-
-        const notesData: Note[] = students.map((s: any) => {
-          const noteForMatiere = (s.notes || []).find((n: any) =>
-            Number(n.id_matiere) === Number(selectedMatiere)
-          );
-
-          const value = noteForMatiere?.sequences?.[selectedPeriod] ?? '';
-          const strValue = value != null ? String(value) : '';
-
-          return {
-            id: s.inscription_id,
-            nom: `${s.student.last_name} ${s.student.first_name}`.trim(),
-            matricule: s.student.matricule || 'N/A',
-            note: strValue,
-            interrogation: strValue,
-            appreciation: strValue ? getAppreciation(parseFloat(strValue)) : ''
-          };
-        });
-
-        setNotes(notesData);
-      } catch (err: any) {
-        console.error("Erreur chargement notes :", err);
+      const students = res.data?.data || [];
+      if (students.length === 0) {
         setNotes([]);
-      } finally {
-        setLoadingStudents(false);
+        return;
       }
-    };
 
-    fetchStudents();
-  }, [selectedYear, selectedClass, selectedMatiere, selectedPeriod]);
+      // 2. Pour chaque élève, charger ses notes pour la matière sélectionnée
+      const notesPromises = students.map(async (s: any) => {
+        const inscriptionId = s.inscription_id;
+        const result = await getNotesByEleveAndMatiere(inscriptionId, selectedMatiere!);
+        
+        // Extraire noteData depuis result.data si result.success est true
+        const noteData = result?.success ? result.data : null;
+        
+        console.log("les donnee de test chargeee tot:", noteData);
 
-  const [savingCells, setSavingCells] = useState<Set<string>>(new Set());
+        // Récupérer la valeur de la période sélectionnée directement depuis noteData
+        const backendValue = noteData?.[selectedPeriod] ?? null;
 
+        const key = buildKey(inscriptionId, selectedMatiere!, selectedPeriod);
+        
+        // Convertir la valeur backend en string ('' si null/undefined)
+        const finalValue = backendValue !== null && backendValue !== undefined 
+          ? String(backendValue) 
+          : '';
+        
+        // Mettre à jour le cache avec la valeur du backend
+        if (finalValue) {
+          savedCellsRef.current.set(key, finalValue);
+        }
+
+        return {
+          id: inscriptionId,
+          nom: `${s.student.last_name} ${s.student.first_name}`.trim(),
+          matricule: s.student.matricule || 'N/A',
+          note: finalValue,
+          interrogation: finalValue,
+          appreciation: finalValue ? getAppreciation(parseFloat(finalValue)) : ''
+        };
+      });
+
+      const notesData = await Promise.all(notesPromises);
+      setNotes(notesData);
+    } catch (err) {
+      console.error("Erreur chargement élèves/notes :", err);
+      setNotes([]);
+    } finally {
+      setLoadingStudents(false);
+    }
+  };
+
+  fetchStudentsAndNotes();
+}, [selectedYear, selectedClass, selectedMatiere, selectedPeriod]);
+
+  // handle change: MAJ UI + cache + envoi au serveur
   const handleNoteChange = async (
     inscriptionId: number,
     field: 'note' | 'interrogation',
@@ -261,61 +235,59 @@ export const NotesPage: React.FC = () => {
   ) => {
     if (!selectedMatiere) return;
 
+    // validation simple
     const numericValue = value === '' ? null : parseFloat(value);
-    if (value !== '' && (isNaN(numericValue!) || numericValue! < 0 || numericValue! > 20)) {
-      return; // Optionnel : tu peux afficher un toast d'erreur
-    }
+    if (value !== '' && (isNaN(numericValue!) || numericValue! < 0 || numericValue! > 20)) return;
 
-    // Mise à jour optimiste de l'UI
+    const key = buildKey(inscriptionId, selectedMatiere, selectedPeriod);
+
+    // MAJ cache immédiatement (optimistic)
+    savedCellsRef.current.set(key, value);
+
+    // MAJ UI
     setNotes(prev =>
       prev.map(n =>
         n.id === inscriptionId
-          ? {
-              ...n,
-              [field]: value,
-              appreciation: value ? getAppreciation(parseFloat(value)) : '',
-            }
+          ? { ...n, [field]: value, appreciation: value ? getAppreciation(parseFloat(value)) : '' }
           : n
       )
     );
 
-    const cellKey = `${inscriptionId}-${selectedPeriod}`;
-    setSavingCells(prev => new Set(prev).add(cellKey));
+    // loader cell
+    setSavingCells(prev => new Set(prev).add(key));
 
-    // Préparer les données à envoyer selon la période
+    // préparer payload et sauvegarder
     let payload: Partial<NotePayload> = {};
-
-    // Note: NotePayload keys are expected to match the backend naming (e.g. sequence1, trimestre1...)
     payload[selectedPeriod as keyof NotePayload] = numericValue;
 
-    // const result = await updateNote(inscriptionId, selectedMatiere, payload);
     const result = await saveOrUpdateNote(inscriptionId, selectedMatiere, payload);
 
-
-    // Retirer le loader
+    // enlever loader
     setSavingCells(prev => {
       const next = new Set(prev);
-      next.delete(cellKey);
+      next.delete(key);
       return next;
     });
 
-    // Optionnel : rollback en cas d'échec
-    if (!result.success) {
-      // Remettre l'ancienne valeur (tu peux stocker l'ancienne avant si tu veux rollback exact)
-      setNotes(prev =>
-        prev.map(n =>
-          n.id === inscriptionId
-            ? {
-                ...n,
-                [field]: '', // on vide pour indiquer échec
-                appreciation: '',
-              }
-            : n
-        )
-      );
+    if (result.success) {
+      // Si backend renvoie la valeur confirmée, mettre à jour le cache avec la valeur backend (si différente)
+      const confirmedValue = result.data?.[selectedPeriod] ?? numericValue;
+      if (confirmedValue !== undefined) {
+        const confirmedStr = confirmedValue === null || confirmedValue === undefined ? '' : String(confirmedValue);
+        savedCellsRef.current.set(key, confirmedStr);
 
-      // Alerte simple — remplace par ton système de toast si tu en as un
-      alert(result.message || "Erreur lors de la sauvegarde");
+        // synchroniser l'UI (au cas où backend a normalisé)
+        setNotes(prev =>
+          prev.map(n => (n.id === inscriptionId ? { ...n, note: confirmedStr, appreciation: confirmedStr ? getAppreciation(parseFloat(confirmedStr)) : '' } : n))
+        );
+      }
+    } else {
+      // rollback minimal : retirer du cache la valeur optimiste si échec (ou tu peux restaurer ancienne valeur)
+      savedCellsRef.current.delete(key);
+      setNotes(prev =>
+        prev.map(n => (n.id === inscriptionId ? { ...n, note: '', appreciation: '' } : n))
+      );
+      alert(result.message || 'Erreur lors de la sauvegarde');
     }
   };
 
@@ -326,7 +298,6 @@ export const NotesPage: React.FC = () => {
 
   const countElevesAvecNotes = () => notes.filter(n => n.note && parseFloat(n.note) > 0).length;
 
-  // Rendu conditionnel
   if (loadingYears || loadingClasses || loadingMatieres) {
     return (
       <div className="p-12 text-center">
@@ -342,8 +313,6 @@ export const NotesPage: React.FC = () => {
       {/* Filtres */}
       <div className="bg-card border rounded-lg p-6 mb-8 shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-
-          {/* Année scolaire */}
           <div>
             <label className="block text-sm font-semibold mb-2">Année scolaire</label>
             <select
@@ -360,7 +329,6 @@ export const NotesPage: React.FC = () => {
             </select>
           </div>
 
-          {/* Classe */}
           <div>
             <label className="block text-sm font-semibold mb-2">Classe</label>
             <select
@@ -369,13 +337,10 @@ export const NotesPage: React.FC = () => {
               className="w-full px-4 py-3 border rounded-md bg-background"
             >
               <option value="">Choisir...</option>
-              {classes.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
+              {classes.map(c => (<option key={c.id} value={c.id}>{c.name}</option>))}
             </select>
           </div>
 
-          {/* Matière */}
           <div>
             <label className="block text-sm font-semibold mb-2">Matière</label>
             <select
@@ -384,13 +349,10 @@ export const NotesPage: React.FC = () => {
               className="w-full px-4 py-3 border rounded-md bg-background"
             >
               <option value="">Choisir...</option>
-              {matieres.map(m => (
-                <option key={m.id} value={m.id}>{m.name}</option>
-              ))}
+              {matieres.map(m => (<option key={m.id} value={m.id}>{m.name}</option>))}
             </select>
           </div>
 
-          {/* Période */}
           <div>
             <label className="block text-sm font-semibold mb-2">Période</label>
             <select
@@ -428,7 +390,7 @@ export const NotesPage: React.FC = () => {
                   {classes.find(c => c.id === selectedClass)?.name} • {matieres.find(m => m.id === selectedMatiere)?.name} • {selectedPeriod.replace('sequence', 'Séquence ').replace('trimestre', 'Trimestre ')}
                 </h3>
                 <p className="text-sm opacity-90 mt-1">
-                  Effectif : {notes.length} élèves • Année : {years.find(y => y.id === selectedYear)?.displayName || (selectedYear ? formatAcademicYear(years.find(y => y.id === selectedYear) as AcademicYear) : '')}
+                  Effectif : {notes.length} élèves • Année : {years.find(y => y.id === selectedYear)?.displayName || ''}
                 </p>
               </div>
               <div className="flex gap-3">
@@ -450,33 +412,36 @@ export const NotesPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {notes.map((eleve, i) => (
-                  <tr key={eleve.id} className="hover:bg-muted/30 transition">
-                    <td className="border px-4 py-3 text-center font-medium bg-muted/20">{i + 1}</td>
-                    <td className="border px-4 py-3 font-mono text-xs bg-muted/20">{eleve.matricule}</td>
-                    <td className="border px-6 py-3 font-medium">{eleve.nom}</td>
-                    <td className="border p-0 relative">
-                      <Input
-                        type="number"
-                        min="0"
-                        max="20"
-                        step="0.25"
-                        value={eleve.note}
-                        onChange={(e) => handleNoteChange(eleve.id, 'note', e.target.value)}
-                        className="w-full h-12 text-center border-none rounded-none focus:ring-2 focus:ring-blue-500 pr-10"
-                        placeholder="--"
-                      />
-                      {savingCells.has(`${eleve.id}-${selectedPeriod}`) && (
-                        <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                          <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                      )}
-                    </td>
-                    <td className={`border px-6 py-3 text-center font-bold ${eleve.appreciation ? getAppreciationColor(eleve.appreciation) : 'bg-muted/20'}`}>
-                      {eleve.appreciation || '--'}
-                    </td>
-                  </tr>
-                ))}
+                {notes.map((eleve, i) => {
+                  const key = buildKey(eleve.id, selectedMatiere, selectedPeriod);
+                  return (
+                    <tr key={eleve.id} className="hover:bg-muted/30 transition">
+                      <td className="border px-4 py-3 text-center font-medium bg-muted/20">{i + 1}</td>
+                      <td className="border px-4 py-3 font-mono text-xs bg-muted/20">{eleve.matricule}</td>
+                      <td className="border px-6 py-3 font-medium">{eleve.nom}</td>
+                      <td className="border p-0 relative">
+                        <Input
+                          type="number"
+                          min="0"
+                          max="20"
+                          step="0.25"
+                          value={eleve.note}
+                          onChange={(e) => handleNoteChange(eleve.id, 'note', e.target.value)}
+                          className="w-full h-12 text-center border-none rounded-none focus:ring-2 focus:ring-blue-500 pr-10"
+                          placeholder="--"
+                        />
+                        {savingCells.has(key) && (
+                          <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                            <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                          </div>
+                        )}
+                      </td>
+                      <td className={`border px-6 py-3 text-center font-bold ${eleve.appreciation ? getAppreciationColor(eleve.appreciation) : 'bg-muted/20'}`}>
+                        {eleve.appreciation || '--'}
+                      </td>
+                    </tr>
+                  );
+                })}
 
                 <tr className="bg-muted font-bold text-foreground">
                   <td colSpan={3} className="border px-6 py-4 text-right">Moyenne de la classe :</td>

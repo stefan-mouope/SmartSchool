@@ -56,7 +56,7 @@ export const getNotesByEleveAndMatiere = async (
 ): Promise<NoteResponse | null> => {
   try {
     const response = await api.get<NoteResponse>(
-      `${BASE_NOTE_SERVICE}/notes/${idInscription}/${idMatiere}/`
+      `${BASE_NOTE_SERVICE}/notes/notes/${idInscription}/${idMatiere}/`
     );
     return response.data;
   } catch (error: any) {
