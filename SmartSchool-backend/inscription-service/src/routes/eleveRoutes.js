@@ -9,6 +9,9 @@ import {
 
 const router = express.Router();
 
+router.get("/school", getStudentsBySchoolId);
+
+
 // ➕ Créer un étudiant
 router.post("/", createStudent);
 
@@ -19,7 +22,6 @@ router.get("/", getAllStudents);
 router.get("/:id", getStudentById);
 
 // get students by school_id
-router.get("/school/:school_id", getStudentsBySchoolId);
 
 // 🗑️ Supprimer un étudiant
 router.delete("/:id", deleteStudent);

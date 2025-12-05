@@ -35,7 +35,7 @@ export const createInscription = async (req, res) => {
     // ✅ Création de l'étudiant s'il n'existe pas déjà
     delete student.matricule;
     const nouveauStudent = await Student.create(student);
-    console.log("👤 Nouvel étudiant créé :", nouveauStudent.id);
+    console.log("👤 Nouvel étudiant créé  de testetsteddsadas:", nouveauStudent.id);
 
     // ✅ Création de l'inscription
     const inscription = await Inscription.create({
@@ -210,7 +210,7 @@ export const getStudentsWithNotes = async (req, res) => {
       const student = ins.Student;
 
     const notesResponse = await axios.get(
-      `http://localhost:8081/note-service/notes/full/${ins.id}/`,
+      `http://service-notes/notes/full/${ins.id}/`,
       { timeout: 5000 } // 5 secondes max
     ).catch(err => ({ data: { notes: [] } }));
 

@@ -14,17 +14,18 @@ services:
     container_name: postgres-smartschool
     restart: always
     environment:
-      POSTGRES_USER: smartschool
-      POSTGRES_PASSWORD: smartschool123
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD:  root
       POSTGRES_DB: smartschool_db
     ports:
       - "5432:5432"
     volumes:
       - smartschool-db-data:/var/lib/postgresql/data
+      - ./docker/postgres/init-multiple-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-dbs.sh
     networks:
       - smartschool-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U smartschool"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -79,7 +80,7 @@ services:
       - EUREKA_CLIENT_FETCH_REGISTRY=true
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://registry-service:8761/eureka/
       - SPRING_CLOUD_GATEWAY_DISCOVERY_LOCATOR_ENABLED=true
-      - SPRING_CLOUD_GATEWAY_SERVER_WEBFLUX_GLOBALCORS_CORS_CONFIGURATIONS___PATHPATTERN__ALLOWED_ORIGINS=http://localhost:8082,http://frontend-service:8082
+      - SPRING_CLOUD_GATEWAY_SERVER_WEBFLUX_GLOBALCORS_CORS_CONFIGURATIONS___PATHPATTERN__ALLOWED_ORIGINS=http://localhost:8082
       - SPRING_CLOUD_GATEWAY_SERVER_WEBFLUX_GLOBALCORS_CORS_CONFIGURATIONS___PATHPATTERN__ALLOWED_HEADERS=*
       - SPRING_CLOUD_GATEWAY_SERVER_WEBFLUX_GLOBALCORS_CORS_CONFIGURATIONS___PATHPATTERN__ALLOWED_METHODS=GET,POST,PUT,DELETE,OPTIONS,PATCH
       - SPRING_CLOUD_GATEWAY_SERVER_WEBFLUX_GLOBALCORS_CORS_CONFIGURATIONS___PATHPATTERN__ALLOW_CREDENTIALS=true

@@ -97,7 +97,7 @@ async getLevelsBySchool(schoolId: number): Promise<number[]> {
 
     // 2️⃣ Appeler directement le service Tranche
     const response = await axios.post(
-      "http://localhost:5000/api/tranches/compute-by-level",
+      "http://inscription-service:5000/api/tranches/compute-by-level",
       { classes }
     );
 

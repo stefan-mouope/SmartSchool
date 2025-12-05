@@ -55,13 +55,22 @@ export const getStudentById = async (req, res) => {
 // get student by school_id
 export const getStudentsBySchoolId = async (req, res) => {
   try {
-    const { school_id } = req.params;
-    const students = await Student.findAll({ where: { school_id } });
+    // Récupère school_id depuis les query params
+    const schoolId = parseInt(req.query.school_id , 10);
+
+    if (isNaN(schoolId)) {
+      return res.status(400).json({ message: "school_id doit être un nombre valide" });
+    }
+
+    // Cherche tous les élèves de cette école
+    const students = await Student.findAll({ where: { school_id: schoolId } });
+
     res.json(students);
   } catch (error) {
+    console.error("Erreur getStudentsBySchoolId:", error);
     res.status(500).json({ message: "Erreur serveur", error });
   }
-}
+};
 
 // 🗑️ Supprimer un étudiant
 export const deleteStudent = async (req, res) => {

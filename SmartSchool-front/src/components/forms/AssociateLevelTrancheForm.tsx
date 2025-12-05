@@ -75,8 +75,8 @@ export const AssociateLevelTrancheForm: React.FC<AssociateLevelTrancheFormProps>
       newErrors.level = "Veuillez sélectionner un niveau";
     }
 
-    const invalid = tranches.some(
-      (t) => !amounts[t.id] || Number(amounts[t.id]) <= 0
+    const invalid = Object.keys(amounts).some(
+      (key) => !amounts[Number(key)] || Number(amounts[Number(key)]) <= 0
     );
 
     if (invalid) newErrors.amounts = "Tous les montants doivent être remplis et > 0";
@@ -93,13 +93,13 @@ export const AssociateLevelTrancheForm: React.FC<AssociateLevelTrancheFormProps>
 
       const payload = {
         level: Number(selectedLevel),
-        tranches: tranches.map((t) => ({
-          tranche_id: t.id,
-          amount: Number(amounts[t.id] || 0),
+        tranches: Object.keys(amounts).map((id) => ({
+          tranche_id: Number(id),
+          amount: Number(amounts[Number(id)]),
         })),
       };
 
-      const response = await api.post(
+      await api.post(
         `${BASE_INSCRIPTION_SERVICE}/api/classroom-tranches/${school_id}`,
         payload
       );
@@ -122,6 +122,26 @@ export const AssociateLevelTrancheForm: React.FC<AssociateLevelTrancheFormProps>
     }
   };
 
+  // ---------------------------------
+  // UTILITAIRES POUR FILTRER LES TRANCHES
+  // ---------------------------------
+const getUsedTrancheIds = (level: number) => {
+  const found = levels.find((l) => l.level === level);
+  if (!found || !found.tranches) return [];
+  // Object.values pour récupérer les objets {id, amount}, puis map sur id
+  return Object.values(found.tranches).map((tranche: any) => tranche.id);
+};
+
+const availableTranches = selectedLevel
+  ? tranches.filter((t) => {
+      const used = getUsedTrancheIds(Number(selectedLevel));
+      return !used.includes(t.id);
+    })
+  : tranches;
+
+  // ---------------------------------
+  // RENDU
+  // ---------------------------------
   return (
     <Dialog open={isOpen} onOpenChange={onCancel}>
       <DialogContent className="max-w-lg">
@@ -133,7 +153,6 @@ export const AssociateLevelTrancheForm: React.FC<AssociateLevelTrancheFormProps>
           <p className="text-center py-6 text-muted-foreground">Chargement...</p>
         ) : (
           <div className="space-y-4">
-
             <FormField label="Niveau" error={errors.level}>
               <select
                 value={selectedLevel}
@@ -149,16 +168,12 @@ export const AssociateLevelTrancheForm: React.FC<AssociateLevelTrancheFormProps>
               </select>
             </FormField>
 
-            {selectedLevel && (
+            {selectedLevel && availableTranches.length > 0 && (
               <div className="space-y-3">
                 <p className="font-medium">Montants des tranches pour ce niveau :</p>
 
-                {tranches.map((t) => (
-                  <FormField
-                    key={t.id}
-                    label={t.tranche_name}
-                    error={errors.amounts}
-                  >
+                {availableTranches.map((t) => (
+                  <FormField key={t.id} label={t.tranche_name} error={errors.amounts}>
                     <Input
                       type="text"
                       value={amounts[t.id] || ""}
@@ -168,6 +183,12 @@ export const AssociateLevelTrancheForm: React.FC<AssociateLevelTrancheFormProps>
                   </FormField>
                 ))}
               </div>
+            )}
+
+            {selectedLevel && availableTranches.length === 0 && (
+              <p className="text-muted-foreground">
+                Toutes les tranches pour ce niveau ont déjà été définies.
+              </p>
             )}
 
             {errors.amounts && (

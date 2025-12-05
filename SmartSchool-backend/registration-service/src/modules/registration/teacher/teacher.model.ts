@@ -3,7 +3,7 @@ import sequelize from "../../../config/database";
 import { School } from "../school/school.model";
 
 export class Teacher extends Model {
-  public id!: string;   // ID deviens string !
+  public id!: string;
   public school_id!: number;
   public user_id!: number;
   public last_name!: string;
@@ -16,7 +16,7 @@ export class Teacher extends Model {
 Teacher.init(
   {
     id: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(20), // taille ajustée
       primaryKey: true
     },
     school_id: { type: DataTypes.INTEGER, allowNull: false },
@@ -34,51 +34,43 @@ Teacher.init(
     timestamps: false,
 
     hooks: {
-      // 🧠 Générer un ID automatiquement avant l'insertion
       beforeCreate: async (teacher: any) => {
         try {
           const today = new Date();
-          const y = today.getFullYear();
+          const y = String(today.getFullYear()).slice(2); // "25"
           const m = String(today.getMonth() + 1).padStart(2, "0");
           const d = String(today.getDate()).padStart(2, "0");
 
-          const datePrefix = `${y}${m}${d}`; // "20250228"
+          const datePrefix = `${y}${m}${d}`; // "250505"
 
-          // Trouver le dernier ID du jour
+          // Chercher le dernier ID commençant par YYMMDD
           const lastTeacher = await Teacher.findOne({
-            where: {
-              id: { [Op.like]: `${datePrefix}%` }
-            },
+            where: { id: { [Op.like]: `${datePrefix}%` } },
             order: [["id", "DESC"]],
-            raw: true // ✅ Important pour éviter les problèmes de type
+            raw: true
           });
 
           let nextNumber = 1;
 
-          if (lastTeacher && lastTeacher.id) {
-            // ✅ Vérifier que l'ID existe et est bien une string
-            const lastId = String(lastTeacher.id); // Forcer en string
-            
-            // ✅ Vérifier que l'ID a au moins 8 caractères (YYYYMMDD)
-            if (lastId.length >= 8) {
-              const lastCounter = parseInt(lastId.slice(8)); // récupérer les chiffres après la date
-              
-              // ✅ Vérifier que c'est un nombre valide
-              if (!isNaN(lastCounter)) {
-                nextNumber = lastCounter + 1;
-              }
+          if (lastTeacher?.id) {
+            const lastId = String(lastTeacher.id);
+            const lastCounter = parseInt(lastId.slice(6)); // après YYMMDD
+
+            if (!isNaN(lastCounter)) {
+              nextNumber = lastCounter + 1;
             }
           }
 
-          const counter = String(nextNumber).padStart(3, "0");
-          const newId = `${datePrefix}${counter}`; // ex : 20250228001
+          // Format compteur sur 2 chiffres
+          const counter = String(nextNumber).padStart(2, "0");
 
-          console.log(`🆔 Génération nouvel ID Teacher: ${newId}`);
-          
+          const newId = `${datePrefix}${counter}`; // ex : 25050501
+
+          console.log(`🆔 ID Teacher généré: ${newId}`);
           teacher.id = newId;
 
-        } catch (error) {
-          console.error("❌ Erreur lors de la génération de l'ID Teacher:", error);
+        } catch (e) {
+          console.error("❌ Erreur génération ID Teacher :", e);
           throw new Error("Impossible de générer un ID pour le professeur");
         }
       }

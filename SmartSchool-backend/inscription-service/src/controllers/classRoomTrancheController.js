@@ -19,7 +19,7 @@ export const setTranchesByLevel = async (req, res) => {
 
     // Récupérer toutes les classes du niveau
     const response = await axios.get(
-      `http://localhost:3000/api/classrooms/level/${school_id}/${level}`
+      `http://registration-service:3000/api/classrooms/level/${school_id}/${level}`
     );
 
     const classrooms = response.data;
