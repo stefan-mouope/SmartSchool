@@ -8,7 +8,7 @@ export const calculerMoyenne = (inter1: string, inter2: string, exam: string): s
 
 export const getAppreciation = (moyenne: string): string => {
   const moy = parseFloat(moyenne);
-  if (!moy) return '';
+  if (isNaN(moy)) return '';
    if (moy >= 19) return 'Excellent';
   if (moy >= 16) return 'Tres Bien';
   if (moy >= 14) return 'Bien';

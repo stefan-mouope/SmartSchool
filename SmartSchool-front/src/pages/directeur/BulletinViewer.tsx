@@ -335,37 +335,6 @@ const handleGenererUn = async (inscriptionId: number) => {
 
 
 
-
-const handleGenererTousPDF = async () => {
-  if (!selectedClass || !selectedYear || students.length === 0) return;
-
-  setGenerating(true);
-
-  try {
-    await generateClassBulletinsZip(students, matieres, {
-      classeLabel: currentClassLabel,
-      anneeLabel: currentYearLabel,
-      periodeLabel,
-      selectedPeriod,
-      periodNumber: selectedPeriodNumber,
-      classe_id: selectedClass,
-      annee_id: selectedYear,
-      genererBulletin,
-      onProgress: (curr, total) => {
-        console.log(`Génération : ${curr}/${total}`);
-        // Tu peux afficher une barre de progression ici
-      }
-    });
-
-    alert("Tous les bulletins ont été générés et téléchargés !");
-  } catch (err) {
-    alert("Erreur lors de la génération en masse");
-  } finally {
-    setGenerating(false);
-  }
-};
-
-
 const handleTelechargerPDF = () => {
     if (!selectedBulletin || !bulletinRef.current) return;
 
@@ -397,7 +366,7 @@ const handleTelechargerPDF = () => {
                   <option key={y.id} value={y.id}>{y.displayName || formatAcademicYear(y)}</option>
                 ))}
               </select>
-            </div>
+            </div>rang
 
             <div>
               <label className="block text-sm font-medium mb-1">Classe</label>

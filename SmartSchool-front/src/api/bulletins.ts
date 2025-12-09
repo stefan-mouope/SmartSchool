@@ -10,6 +10,3 @@ export const genererBulletin = async (payload: {
   return res.data;
 };
 
-// export const telechargerBulletinPDF = (bulletinId: number) => {
-//   window.open(`http://localhost:8002/api/bulletins/${bulletinId}/export/`, "_blank");
-// };

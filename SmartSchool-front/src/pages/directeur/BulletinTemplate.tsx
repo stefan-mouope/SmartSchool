@@ -475,7 +475,7 @@ export const BulletinTemplate: React.FC<BulletinTemplateProps> = ({
                 fontWeight: 'bold',
                 color: '#e74c3c'
               }}>
-                {moyenneGenerale != null ? `${moyenneGenerale.toFixed(2)}/20` : '-/20'}
+                {moyenneClasse != null ? `${moyenneClasse.toFixed(2)}/20` : '-/20'}
               </div>
             </div>
           </div>
