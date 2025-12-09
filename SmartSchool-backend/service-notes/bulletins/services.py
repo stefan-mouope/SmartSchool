@@ -1,12 +1,29 @@
 from notes.models import Note
+from .rabbitmq import envent_get_all_inscription_of_classroom
 
 def get_inscriptions_classe(classe_id):
     """
     Retourne une liste d'IDs d'inscriptions pour la classe.
-    Ici simulé, tu dois appeler l'API du service Inscription.
+    Données récupérées depuis le service Inscription.
     """
-    # Exemple : [1, 2, 3, 4, 5]
-    return [1, 2, 3, 4, 5]  # IDs fictifs pour les tests
+
+    inscriptions_datas = envent_get_all_inscription_of_classroom(classe_id)
+  
+
+    # Si l'API ne renvoie rien ou échoue
+    if not inscriptions_datas or not inscriptions_datas.get("status"):
+        return []
+
+    data = inscriptions_datas.get("data", [])
+
+    # Extraire uniquement les IDs
+    inscription_ids = [item["id"] for item in data if "id" in item]
+
+    return inscription_ids
+
+  
+    # # Exemple : [1, 2, 3, 4, 5]
+    # return [1, 2, 3, 4, 5]  # IDs fictifs pour les tests
 
 # --- CALCULS DE MOYENNES ---
 def moyenne_matiere(inscription_id, matiere_id, trimestre=None, sequence=None):
@@ -57,6 +74,7 @@ def moyenne_generale(inscription_id, trimestre=None, sequence=None):
 
 def moyenne_classe(classe_id, trimestre=None, sequence=None):
     inscription_ids = get_inscriptions_classe(classe_id)
+
     moys = []
     for ins_id in inscription_ids:
         mg = moyenne_generale(ins_id, trimestre, sequence)
@@ -70,6 +88,7 @@ def moyenne_classe(classe_id, trimestre=None, sequence=None):
 
 def rang_eleve(inscription_id, classe_id, trimestre=None, sequence=None):
     inscription_ids = get_inscriptions_classe(classe_id)
+   
     pairs = []
     for ins_id in inscription_ids:
         mg = moyenne_generale(ins_id, trimestre, sequence)

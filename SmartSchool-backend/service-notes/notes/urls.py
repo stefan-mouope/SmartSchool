@@ -32,4 +32,5 @@ urlpatterns = [
     
     path("notes/<int:id_inscription>/<int:id_matiere>/", GetSingleNote.as_view()),
 
+
 ]

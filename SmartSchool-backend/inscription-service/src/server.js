@@ -14,7 +14,7 @@ import {
 import eurekaClient from "./eureka/eurekaClient.js";
 import { connectRabbitMQ } from "./config/rabbitmq.js";
 import { startVerifyInscriptionConsumer } from "./consumers/verifyInscriptionConsumer.js";
-
+import { startGetInscriptionByClassRoomIdConsumer } from "./consumers/getInscriptionByClassRoomIdConsumer.js";
 const PORT = process.env.PORT || 5000;
 
 (async () => {
@@ -41,7 +41,9 @@ const PORT = process.env.PORT || 5000;
     console.log("⏳ Démarrage du consumer verifyInscription...");
     await startVerifyInscriptionConsumer();
     console.log("👂 Consumer verifyInscription démarré.");
-
+    console.log("⏳ Démarrage du consumer inscpiton en fontion des classe...");
+    await startGetInscriptionByClassRoomIdConsumer();
+    console.log("👂 Consumer get incition by classroom  démarré.");
     // -------------------------
     // Démarrage du serveur HTTP
     // -------------------------

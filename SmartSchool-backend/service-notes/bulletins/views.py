@@ -29,6 +29,7 @@ def api_generer_bulletin(request):
     """
     inscription_id = request.data.get('inscription_id')
     classe_id = request.data.get('classe_id')
+    
     trimestre = int(request.data.get('trimestre')) if request.data.get('trimestre') else None
     sequence = request.data.get('sequence')
 

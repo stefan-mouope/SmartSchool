@@ -7,6 +7,7 @@ export const genererBulletin = async (payload: {
   sequence?: number;
 }) => {
   const res = await api.post(`${BASE_NOTE_SERVICE}/api/bulletins/generer/`, payload);
+  console.log(res)
   return res.data;
 };
 

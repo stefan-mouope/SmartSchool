@@ -74,15 +74,15 @@ api.interceptors.response.use(
     const status = error.response?.status;
 
     // ⛔ EXCLURE LOGIN & REFRESH des retry
-    const isLogin = original.url?.includes("/auth-service/api/auth/login");
-    const isRefresh = original.url?.includes("token/refresh");
-
-    if (isLogin || isRefresh) {
+    const isLogin = original.url?.includes(`${BASE_AUTH_SERVICE}/api/auth/login`);
+    const isRefresh = original.url?.includes(`${BASE_AUTH_SERVICE}/api/token/refresh`);
+    const isRegistry = original.url?.includes(`${BASE_AUTH_SERVICE}/api/auth/register`);
+    if (isLogin || isRefresh || isRegistry) {
       return Promise.reject(error);
     }
 
     // ----- Cas refresh → mauvais token -----
-    if (original.url?.includes("token/refresh") && (status === 401 || status === 403)) {
+    if (original.url?.includes(`${BASE_AUTH_SERVICE}/api/token/refresh`) && (status === 401 || status === 403)) {
       logoutUser();
       return Promise.reject(error);
     }
