@@ -176,12 +176,12 @@ DEPLOYMENTS=(
     "frontend-service-deployment"
 )
 
-# for deploy in "${DEPLOYMENTS[@]}"; do
-#     echo "🔄 Restart : $deploy"
-#     kubectl rollout restart deployment/$deploy -n $NAMESPACE 2>/dev/null && \
-#     kubectl rollout status deployment/$deploy -n $NAMESPACE --timeout=120s || \
-#     echo "⚠️  Problème avec $deploy"
-# done
+for deploy in "${DEPLOYMENTS[@]}"; do
+    echo "🔄 Restart : $deploy"
+    kubectl rollout restart deployment/$deploy -n $NAMESPACE 2>/dev/null && \
+    kubectl rollout status deployment/$deploy -n $NAMESPACE --timeout=120s || \
+    echo "⚠️  Problème avec $deploy"
+done
 
 echo "=============================================================="
 echo " ********** DEPLOIEMENT TERMINÉ ! TOUS LES SERVICES SONT PRÊTS.********"

@@ -1,11 +1,13 @@
 import axios from "axios";
 
-const APP_NAME = "inscription-service";
+const APP_NAME = "inscription-service";  // ⬅️ Adapter selon le service
 const PORT = parseInt(process.env.PORT || "5000", 10);
 const EUREKA_HOST = process.env.EUREKA_HOST || "registry-service";
 const EUREKA_PORT = parseInt(process.env.EUREKA_PORT || "8761", 10);
 
-function getPodIp() {  // ✅ Pas de type ': string'
+let isRegistered = false;  // ✅ Flag pour suivre l'état d'enregistrement
+
+function getPodIp() {
   const podIp = process.env.POD_IP || process.env.HOSTNAME;
   
   if (!podIp) {
@@ -65,44 +67,76 @@ async function registerInstance() {
     });
     
     console.log(`✅ [Eureka] Enregistré avec succès !`);
+    isRegistered = true;  // ✅ Marquer comme enregistré
+    return true;
+    
   } catch (err) {
     console.error(`❌ [Eureka] Erreur d'enregistrement :`, err.message);
     if (err.response) {
       console.error(`   Status: ${err.response.status}`);
       console.error(`   Data:`, JSON.stringify(err.response.data, null, 2));
     }
+    isRegistered = false;
+    return false;
   }
 }
 
 async function renewRegistration() {
+  // ✅ Ne pas envoyer de heartbeat si pas enregistré
+  if (!isRegistered) {
+    console.log(`⚠️ [Eureka] Pas encore enregistré, skip heartbeat`);
+    return;
+  }
+
   try {
     await axios.put(`${EUREKA_URL}/${INSTANCE_ID}`, {}, { timeout: 3000 });
     console.log(`💓 [Eureka] Heartbeat envoyé`);
   } catch (err) {
-    console.error(`⚠️ [Eureka] Heartbeat échoué :`, err.message);
+    const status = err.response?.status;
+    console.error(`⚠️ [Eureka] Heartbeat échoué : ${status || err.message}`);
+    
+    // ✅ Si 404, se réenregistrer
+    if (status === 404) {
+      console.log(`🔄 [Eureka] Instance non trouvée, réenregistrement...`);
+      isRegistered = false;
+      await registerInstance();
+    }
   }
 }
 
 async function unregisterInstance() {
+  if (!isRegistered) {
+    console.log(`ℹ️ [Eureka] Service non enregistré, skip désinscription`);
+    return;
+  }
+
   try {
     await axios.delete(`${EUREKA_URL}/${INSTANCE_ID}`, { timeout: 3000 });
     console.log(`🧹 [Eureka] Service désinscrit`);
+    isRegistered = false;
   } catch (err) {
     console.warn(`⚠️ [Eureka] Erreur désinscription :`, err.message);
   }
 }
 
-export function startEureka() {
+export async function startEureka() {
   console.log(`🚀 [Eureka] Démarrage du client Eureka`);
   console.log(`   - Service: ${APP_NAME}`);
   console.log(`   - Pod IP: ${POD_IP}`);
   console.log(`   - Pod Name: ${POD_NAME}`);
   console.log(`   - Port: ${PORT}`);
   
-  // Enregistrement initial
-  registerInstance();
+  // ✅ IMPORTANT : Attendre la confirmation d'enregistrement
+  const registered = await registerInstance();
   
-  // Heartbeat toutes les 30s
+  if (!registered) {
+    console.error(`❌ [Eureka] Échec de l'enregistrement initial, retry dans 10s...`);
+    // Réessayer après 10 secondes
+    setTimeout(() => startEureka(), 10000);
+    return;
+  }
+  
+  // ✅ Heartbeat seulement si enregistré
   const heartbeatInterval = setInterval(() => {
     renewRegistration();
   }, 30_000);

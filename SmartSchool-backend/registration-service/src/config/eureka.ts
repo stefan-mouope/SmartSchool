@@ -1,11 +1,10 @@
 import axios from "axios";
 
-const APP_NAME = "registration-service";
+const APP_NAME = "registration-service";  // Adapter selon le service
 const PORT = parseInt(process.env.PORT || "3000", 10);
 const EUREKA_HOST = process.env.EUREKA_HOST || "registry-service";
 const EUREKA_PORT = parseInt(process.env.EUREKA_PORT || "8761", 10);
 
-// ✅ CORRECTION : Récupérer l'IP du pod, PAS le nom du pod
 function getPodIp(): string {
   const podIp = process.env.POD_IP || process.env.HOSTNAME;
   
@@ -14,7 +13,6 @@ function getPodIp(): string {
     return "127.0.0.1";
   }
   
-  // Vérifier que c'est bien une IP valide
   if (!podIp.match(/^\d+\.\d+\.\d+\.\d+$/)) {
     console.error(`❌ [Eureka] POD_IP invalide : ${podIp}`);
     return "127.0.0.1";
@@ -29,13 +27,15 @@ const POD_NAME = process.env.POD_NAME || "unknown";
 const INSTANCE_ID = `${POD_IP}:${APP_NAME}:${PORT}`;
 const EUREKA_URL = `http://${EUREKA_HOST}:${EUREKA_PORT}/eureka/apps/${APP_NAME.toUpperCase()}`;
 
-async function registerInstance() {
+let isRegistered = false;  // ✅ Flag pour suivre l'état d'enregistrement
+
+async function registerInstance(): Promise<boolean> {
   const instance = {
     instance: {
       instanceId: INSTANCE_ID,
-      hostName: POD_IP,              // ✅ IP du pod
+      hostName: POD_IP,
       app: APP_NAME.toUpperCase(),
-      ipAddr: POD_IP,                // ✅ IP du pod
+      ipAddr: POD_IP,
       vipAddress: APP_NAME,
       secureVipAddress: APP_NAME,
       status: "UP",
@@ -66,44 +66,76 @@ async function registerInstance() {
     });
     
     console.log(`✅ [Eureka] Enregistré avec succès !`);
+    isRegistered = true;  // ✅ Marquer comme enregistré
+    return true;
+    
   } catch (err: any) {
     console.error(`❌ [Eureka] Erreur d'enregistrement :`, err.message);
     if (err.response) {
       console.error(`   Status: ${err.response.status}`);
       console.error(`   Data:`, JSON.stringify(err.response.data, null, 2));
     }
+    isRegistered = false;
+    return false;
   }
 }
 
 async function renewRegistration() {
+  // ✅ Ne pas envoyer de heartbeat si pas enregistré
+  if (!isRegistered) {
+    console.log(`⚠️ [Eureka] Pas encore enregistré, skip heartbeat`);
+    return;
+  }
+
   try {
     await axios.put(`${EUREKA_URL}/${INSTANCE_ID}`, {}, { timeout: 3000 });
     console.log(`💓 [Eureka] Heartbeat envoyé`);
   } catch (err: any) {
-    console.error(`⚠️ [Eureka] Heartbeat échoué :`, err.message);
+    const status = err.response?.status;
+    console.error(`⚠️ [Eureka] Heartbeat échoué : ${status || err.message}`);
+    
+    // ✅ Si 404, se réenregistrer
+    if (status === 404) {
+      console.log(`🔄 [Eureka] Instance non trouvée, réenregistrement...`);
+      isRegistered = false;
+      await registerInstance();
+    }
   }
 }
 
 async function unregisterInstance() {
+  if (!isRegistered) {
+    console.log(`ℹ️ [Eureka] Service non enregistré, skip désinscription`);
+    return;
+  }
+
   try {
     await axios.delete(`${EUREKA_URL}/${INSTANCE_ID}`, { timeout: 3000 });
     console.log(`🧹 [Eureka] Service désinscrit`);
+    isRegistered = false;
   } catch (err: any) {
     console.warn(`⚠️ [Eureka] Erreur désinscription :`, err.message);
   }
 }
 
-export function startEureka() {
+export async function startEureka() {
   console.log(`🚀 [Eureka] Démarrage du client Eureka`);
   console.log(`   - Service: ${APP_NAME}`);
   console.log(`   - Pod IP: ${POD_IP}`);
   console.log(`   - Pod Name: ${POD_NAME}`);
   console.log(`   - Port: ${PORT}`);
   
-  // Enregistrement initial
-  registerInstance();
+  // ✅ IMPORTANT : Attendre la confirmation d'enregistrement
+  const registered = await registerInstance();
   
-  // Heartbeat toutes les 30s
+  if (!registered) {
+    console.error(`❌ [Eureka] Échec de l'enregistrement initial, retry dans 10s...`);
+    // Réessayer après 10 secondes
+    setTimeout(() => startEureka(), 10000);
+    return;
+  }
+  
+  // ✅ Heartbeat seulement si enregistré
   const heartbeatInterval = setInterval(() => {
     renewRegistration();
   }, 30_000);
