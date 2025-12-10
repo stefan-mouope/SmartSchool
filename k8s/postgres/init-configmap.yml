@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+  namespace: smartschool
+data:
+  init-multiple-dbs.sh: |
+    #!/bin/bash
+    set -e
+    psql -U postgres -c "CREATE DATABASE smartschool_db;"
+    psql -U postgres -c "CREATE DATABASE smartschool_db1;"
+    psql -U postgres -c "CREATE DATABASE smartschool_db2;"
+    psql -U postgres -c "CREATE DATABASE smartschool_db3;"
+    psql -U postgres -c "CREATE DATABASE smartschool_db4;"

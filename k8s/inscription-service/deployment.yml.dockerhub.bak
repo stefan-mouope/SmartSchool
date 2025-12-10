@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inscription-service-deployment
+  namespace: smartschool
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: inscription-service
+  template:
+    metadata:
+      labels:
+        app: inscription-service
+    spec:
+      containers:
+        - name: inscription-service-container
+          image: sandjonyves/inscription-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+          env:
+            # 🟦 Variables de base de données
+            - name: DB_HOST
+              value: "postgres"
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_USER
+              value: "postgres"
+            - name: DB_PASSWORD
+              value: "root"
+            - name: DB_NAME
+              value: "smartschool_db1"
+            
+            # 🟩 Port du service
+            - name: PORT
+              value: "5000"
+            
+            # 🟪 Variables Eureka
+            # POD_IP contient l'IP du pod (ex: 10.244.0.123)
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            
+            # HOSTNAME contient aussi l'IP (pour compatibilité)
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            
+            # POD_NAME contient le nom du pod (pour logging)
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            
+            # Configuration Eureka
+            - name: EUREKA_HOST
+              value: "registry-service"
+            - name: EUREKA_PORT
+              value: "8761"

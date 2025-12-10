@@ -1,0 +1,66 @@
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: config-service-deployment
+#   namespace: smartschool
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: config-service
+#   template:
+#     metadata:
+#       labels:
+#         app: config-service
+#     spec:
+#       containers:
+#         - name: config-service-container
+#           image: config-service
+#           imagePullPolicy: Always
+#           ports:
+#             - containerPort: 8080
+#           env:
+#             - name: SPRING_APPLICATION_NAME
+#               value: "config-service"
+#             - name: SERVER_PORT
+#               value: "8080"
+#             - name: SPRING_PROFILES_ACTIVE
+#               value: "native"
+#             - name: SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH-LOCATIONS
+#               value: "file:///cloud-config/"
+#           volumeMounts:
+#             - name: cloud-config-volume
+#               mountPath: /cloud-config
+#       volumes:
+#         - name: cloud-config-volume
+#           hostPath:
+#             path: ./smartSchool-config/cloud-config
+#             type: Directory
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: config-service-deployment
+  namespace: smartschool
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: config-service
+  template:
+    metadata:
+      labels:
+        app: config-service
+    spec:
+      containers:
+        - name: config-service-container
+          image: sandjonyves/config-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_APPLICATION_NAME
+              value: "config-service"
+            - name: SERVER_PORT
+              value: "8080"
+            - name: SPRING_CLOUD_CONFIG_SERVER_GIT_URI
+              value: "https://github.com/sandjonyves/smartSchool-config.git"

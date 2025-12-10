@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: authentification-service-deployment
+  namespace: smartschool
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: authentification-service
+  template:
+    metadata:
+      labels:
+        app: authentification-service
+    spec:
+      containers:
+        - name: authentification-service-container
+          image: sandjonyves/authentification-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8001
+          env:
+            # 🟦 Variables de base
+            - name: RABBITMQ_HOST
+              value: "rabbitmq-service"
+            - name: DB_HOST
+              value: "postgres"
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_USER
+              value: "postgres"
+            - name: DB_PASSWORD
+              value: "root"
+            - name: DB_NAME
+              value: "smartschool_db4"
+            
+            # 🟩 Port du service
+            - name: PORT
+              value: "8001"
+            
+            # 🟪 Variables Eureka
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            
+            - name: EUREKA_HOST
+              value: "registry-service"
+            - name: EUREKA_PORT
+              value: "8761"
