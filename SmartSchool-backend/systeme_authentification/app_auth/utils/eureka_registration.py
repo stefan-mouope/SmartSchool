@@ -1,39 +1,44 @@
 import threading
 import time
 import requests
-import socket
+import os
 import atexit
 
 # -------------------------
 # Configuration du service
 # -------------------------
-APP_NAME = "AUTH-SERVICE"         # Nom du service pour Gateway
-INSTANCE_PORT = 8001               # Port de ton service Django
-HOST_NAME='registry-service'
+APP_NAME = "authentification-service"  # ✅ Lowercase pour cohérence
+INSTANCE_PORT = 8001
+EUREKA_HOST = os.getenv("EUREKA_HOST", "registry-service")
+EUREKA_PORT = os.getenv("EUREKA_PORT", "8761")
 
-def get_host_ip():
-    """Retourne l'IP réelle de la machine accessible par Eureka/Gateway."""
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        # Connexion à Google DNS pour récupérer l'IP locale
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-    except Exception:
-        ip = "127.0.0.1"
-    finally:
-        s.close()
-    return ip
+def get_pod_ip():
+    """Retourne l'IP du pod depuis les variables d'environnement."""
+    pod_ip = os.getenv("POD_IP") or os.getenv("HOSTNAME")
+    
+    if not pod_ip:
+        print("❌ [Eureka] POD_IP non défini !")
+        return "127.0.0.1"
+    
+    # Vérifier que c'est une IP valide
+    import re
+    if not re.match(r'^\d+\.\d+\.\d+\.\d+$', pod_ip):
+        print(f"❌ [Eureka] POD_IP invalide : {pod_ip}")
+        return "127.0.0.1"
+    
+    print(f"📍 [Eureka] Pod IP détecté : {pod_ip}")
+    return pod_ip
 
-HOST_IP = get_host_ip()
-INSTANCE_ID = f"{HOST_IP}:{APP_NAME}:{INSTANCE_PORT}"  # ID unique Eureka
-
-EUREKA_SERVER = f"http://{HOST_NAME}:8761/eureka/apps"
+HOST_IP = get_pod_ip()
+POD_NAME = os.getenv("POD_NAME", "unknown")
+INSTANCE_ID = f"{HOST_IP}:{APP_NAME}:{INSTANCE_PORT}"
+EUREKA_SERVER = f"http://{EUREKA_HOST}:{EUREKA_PORT}/eureka/apps"
 
 # -------------------------
 # Fonctions Eureka
 # -------------------------
 def register_instance():
-    """Enregistre le service dans Eureka avec URLs pour dashboard cliquable."""
+    """Enregistre le service dans Eureka."""
     instance = {
         "instance": {
             "instanceId": INSTANCE_ID,
@@ -41,73 +46,85 @@ def register_instance():
             "app": APP_NAME.upper(),
             "ipAddr": HOST_IP,
             "vipAddress": APP_NAME,
+            "secureVipAddress": APP_NAME,
             "status": "UP",
             "port": {"$": INSTANCE_PORT, "@enabled": "true"},
+            "securePort": {"$": 443, "@enabled": "false"},
             "dataCenterInfo": {
                 "@class": "com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo",
                 "name": "MyOwn"
             },
-            # URLs pour le dashboard Eureka
             "homePageUrl": f"http://{HOST_IP}:{INSTANCE_PORT}/",
-            "statusPageUrl": f"http://{HOST_IP}:{INSTANCE_PORT}/actuator/health",
-            "healthCheckUrl": f"http://{HOST_IP}:{INSTANCE_PORT}/actuator/health"
+            "statusPageUrl": f"http://{HOST_IP}:{INSTANCE_PORT}/health",
+            "healthCheckUrl": f"http://{HOST_IP}:{INSTANCE_PORT}/health",
+            "metadata": {
+                "management.port": str(INSTANCE_PORT),
+                "pod.name": POD_NAME
+            }
         }
     }
-
-    url = f"{EUREKA_SERVER}/{APP_NAME}"
+    
+    url = f"{EUREKA_SERVER}/{APP_NAME.upper()}"
     headers = {"Content-Type": "application/json"}
+    
     try:
-        response = requests.post(url, json=instance, headers=headers)
+        print(f"🔄 [Eureka] Enregistrement en cours...")
+        print(f"   - Instance ID: {INSTANCE_ID}")
+        print(f"   - URL: {url}")
+        
+        response = requests.post(url, json=instance, headers=headers, timeout=5)
+        
         if response.status_code in (200, 204):
-            print(f"✅ [Eureka] Service enregistré : {APP_NAME}")
+            print(f"✅ [Eureka] Service enregistré avec succès !")
         else:
             print(f"⚠️ [Eureka] Échec enregistrement : {response.status_code} {response.text}")
     except Exception as e:
-        print("❌ [Eureka] Erreur de connexion :", e)
+        print(f"❌ [Eureka] Erreur de connexion : {e}")
 
 def renew_registration():
     """Envoie un heartbeat pour garder l'inscription active."""
-    url = f"{EUREKA_SERVER}/{APP_NAME}/{INSTANCE_ID}"
+    url = f"{EUREKA_SERVER}/{APP_NAME.upper()}/{INSTANCE_ID}"
+    
     try:
-        response = requests.put(url)
+        response = requests.put(url, timeout=3)
         if response.status_code == 200:
             print("💓 [Eureka] Heartbeat envoyé")
         else:
-            print("⚠️ [Eureka] Heartbeat échoué :", response.status_code, response.text)
+            print(f"⚠️ [Eureka] Heartbeat échoué : {response.status_code}")
     except Exception as e:
-        print("⚠️ [Eureka] Heartbeat échoué :", e)
+        print(f"⚠️ [Eureka] Heartbeat échoué : {e}")
 
 def unregister_instance():
     """Désinscrit le service à l'arrêt du serveur."""
-    url = f"{EUREKA_SERVER}/{APP_NAME}/{INSTANCE_ID}"
+    url = f"{EUREKA_SERVER}/{APP_NAME.upper()}/{INSTANCE_ID}"
+    
     try:
-        response = requests.delete(url)
+        response = requests.delete(url, timeout=3)
         if response.status_code in (200, 204):
             print("🧹 [Eureka] Service désinscrit proprement.")
         else:
-            print("⚠️ [Eureka] Erreur de désinscription :", response.status_code, response.text)
+            print(f"⚠️ [Eureka] Erreur de désinscription : {response.status_code}")
     except Exception as e:
-        print("⚠️ [Eureka] Erreur de désinscription :", e)
+        print(f"⚠️ [Eureka] Erreur de désinscription : {e}")
 
 # -------------------------
 # Thread pour heartbeat
 # -------------------------
 def start_eureka_registration():
+    """Démarre l'enregistrement Eureka et le heartbeat."""
+    print(f"🚀 [Eureka] Démarrage du client Eureka")
+    print(f"   - Service: {APP_NAME}")
+    print(f"   - Pod IP: {HOST_IP}")
+    print(f"   - Pod Name: {POD_NAME}")
+    print(f"   - Port: {INSTANCE_PORT}")
+    
     register_instance()
     atexit.register(unregister_instance)
-
+    
     def keep_alive():
         while True:
+            time.sleep(30)
             renew_registration()
-            time.sleep(30)  # toutes les 30 secondes
-
+    
     thread = threading.Thread(target=keep_alive, daemon=True)
     thread.start()
-
-# -------------------------
-# Lancer l'enregistrement au démarrage
-# -------------------------
-if __name__ == "__main__":
-    start_eureka_registration()
-    # Ici tu peux démarrer ton serveur Django normalement
-    # Exemple : python manage.py runserver 0.0.0.0:8000

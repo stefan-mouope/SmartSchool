@@ -35,6 +35,11 @@ app.get("/health", (req: Request, res: Response) => {
   });
 });
 
+
+app.get("/actuator/health", (req, res) => {
+  res.status(200).json({ status: "UP" });
+});
+
 // Routes de l'API
 app.use("/api", registrationRoutes);
 

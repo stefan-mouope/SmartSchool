@@ -24,24 +24,25 @@ const PORT = config.port;
     // 2) CONNEXION À RABBITMQ
     console.log("🔄 Tentative de connexion à RabbitMQ...");
     console.log("📍 RABBITMQ_HOST =", process.env.RABBITMQ_HOST);
-    
     await connectRabbitMQ();
     console.log("✔️ RabbitMQ connecté");
 
     // 3) DÉMARRER LES CONSUMERS
     startInscriptionRequestConsumer();
     console.log("✔️ Consumer 'inscription.request' démarré");
-
     await startVerifyMatiereConsumer();
     console.log("✔️ Consommateur 'matiere.verify' démarré");
 
-    // ÉTAPE 4 : SYNCHRONISER LA BASE DE DONNÉES
+    // 4) SYNCHRONISER LA BASE DE DONNÉES
     await sequelize.sync();
     console.log("✔️ Base de données synchronisée");
 
-    // 5) DÉMARRAGE DU SERVEUR HTTP
+    // 5) ENREGISTRER LE SERVICE SUR EUREKA
+    startEureka();
+    console.log("🔄 Tentative d'enregistrement sur Eureka...");
+
+    // 6) DÉMARRAGE DU SERVEUR HTTP
     app.listen(PORT, () => {
-      startEureka();
       console.log(`✔️ Serveur démarré sur le port ${PORT}`);
       console.log(`➡ Environnement : ${config.nodeEnv}`);
       console.log(`➡ API : http://localhost:${PORT}`);
@@ -54,15 +55,12 @@ const PORT = config.port;
   }
 })();
 
-// ARRÊT GRACIEUX
-process.on("SIGTERM", async () => {
-  console.log("SIGTERM reçu → fermeture du serveur...");
+// ARRÊT GRACIEUX + DÉSINSCRIPTION EUREKA
+async function gracefulExit() {
+  console.log("🛑 Fermeture du serveur...");
   await sequelize.close();
   process.exit(0);
-});
+}
 
-process.on("SIGINT", async () => {
-  console.log("SIGINT reçu → fermeture du serveur...");
-  await sequelize.close();
-  process.exit(0);
-});
+process.on("SIGTERM", gracefulExit);
+process.on("SIGINT", gracefulExit);

@@ -31,23 +31,23 @@ services:
       retries: 5
 
   config-service:
-    build: ./smartSchool-config/config-service
-    ports:
-      - "8080:8080"
-    environment:
-      - SPRING_APPLICATION_NAME=config-service
-      - SERVER_PORT=8080
-      - SPRING_PROFILES_ACTIVE=native
-      - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH-LOCATIONS=file:///cloud-config/
-    volumes:
-      - ./smartSchool-config/cloud-config:/cloud-config
-    networks:
-      - smartschool-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+      build: ./smartSchool-config/config-service
+      ports:
+        - "8080:8080"
+      environment:
+        - SPRING_APPLICATION_NAME=config-service
+        - SERVER_PORT=8080
+        - SPRING_PROFILES_ACTIVE=native
+        - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH-LOCATIONS=file:///cloud-config/
+      volumes:
+        - ./smartSchool-config/cloud-config:/cloud-config
+      networks:
+        - smartschool-network
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+        interval: 30s
+        timeout: 10s
+        retries: 5
 
   registry-service:
     build: ./smartSchool-config/registry-service

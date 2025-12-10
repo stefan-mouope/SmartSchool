@@ -10,11 +10,11 @@ import {
   Payer,
   ClassRoomTranche,  // ⬅️ IMPORT IMPORTANT
 } from "./models/associations.js";
-
-import eurekaClient from "./eureka/eurekaClient.js";
 import { connectRabbitMQ } from "./config/rabbitmq.js";
 import { startVerifyInscriptionConsumer } from "./consumers/verifyInscriptionConsumer.js";
 import { startGetInscriptionByClassRoomIdConsumer } from "./consumers/getInscriptionByClassRoomIdConsumer.js";
+import { startEureka } from "./eureka/eurekaClient.js";
+
 const PORT = process.env.PORT || 5000;
 
 (async () => {
@@ -23,9 +23,6 @@ const PORT = process.env.PORT || 5000;
     // Synchronisation des modèles
     // -------------------------
     await sequelize.sync(); 
-    // ⬅️ Toujours préférable : crée automatiquement toutes les tables
-    // incluant ClassRoomTranche et les relations
-
     console.log("🗄️  Modèles synchronisés avec la base de données.");
 
     // -------------------------
@@ -41,20 +38,19 @@ const PORT = process.env.PORT || 5000;
     console.log("⏳ Démarrage du consumer verifyInscription...");
     await startVerifyInscriptionConsumer();
     console.log("👂 Consumer verifyInscription démarré.");
-    console.log("⏳ Démarrage du consumer inscpiton en fontion des classe...");
+    
+    console.log("⏳ Démarrage du consumer inscription en fonction des classes...");
     await startGetInscriptionByClassRoomIdConsumer();
-    console.log("👂 Consumer get incition by classroom  démarré.");
+    console.log("👂 Consumer get inscription by classroom démarré.");
+
     // -------------------------
     // Démarrage du serveur HTTP
     // -------------------------
     app.listen(PORT, () => {
-      console.log(`🚀 Service Inscription démarré sur le port ${PORT}`);
-
-      // Enregistrement Eureka
-      eurekaClient.start(error => {
-        if (error) console.error("❌ Erreur Eureka :", error);
-        else console.log("✅ Service enregistré sur Eureka !");
-      });
+      console.log(`🚀 Service Inscription démarré sur le port ${PORT}`);  // ✅ CORRIGÉ
+      
+      // ✅ Démarrage d'Eureka APRÈS que le serveur écoute
+      startEureka();
     });
 
     // -------------------------
@@ -62,13 +58,16 @@ const PORT = process.env.PORT || 5000;
     // -------------------------
     process.on("SIGINT", () => {
       console.log("\n🛑 Arrêt du service...");
-      eurekaClient.stop(() => {
-        console.log("🧼 Service désenregistré d’Eureka");
-        process.exit(0);
-      });
+      process.exit(0);
+    });
+
+    process.on("SIGTERM", () => {
+      console.log("\n🛑 Arrêt du service...");
+      process.exit(0);
     });
 
   } catch (error) {
     console.error("❌ Erreur au démarrage du service :", error);
+    process.exit(1);
   }
 })();

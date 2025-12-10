@@ -31,4 +31,12 @@ app.get("/", (req, res) => {
   res.send("Service Inscription OK");
 });
 
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "UP" });
+});
+
+app.get("/actuator/health", (req, res) => {
+  res.status(200).json({ status: "UP" });
+});
+
 export default app;
