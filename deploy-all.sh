@@ -94,12 +94,15 @@ done
 
 echo "✅ Déploiement terminé !"
 
-# Port-forward des services
-# kubectl port-forward service/registry-service 8761:8761 -n $NAMESPACE &
-# echo "Registry Service -> http://localhost:8761"
+echo "delete all forward "
+pkill -f "kubectl port-forward"
 
-# kubectl port-forward service/proxy-service 8081:8081 -n $NAMESPACE &
-# echo "Proxy Service -> http://localhost:8081"
+Port-forward des services
+kubectl port-forward service/registry-service 8761:8761 -n $NAMESPACE &
+echo "Registry Service -> http://localhost:8761"
 
-# kubectl port-forward service/frontend-service 8082:8082 -n $NAMESPACE &
-# echo "Frontend Service -> http://localhost:8082"
+kubectl port-forward service/proxy-service 8081:8081 -n $NAMESPACE &
+echo "Proxy Service -> http://localhost:8081"
+
+kubectl port-forward service/frontend-service 8082:8082 -n $NAMESPACE &
+echo "Frontend Service -> http://localhost:8082"

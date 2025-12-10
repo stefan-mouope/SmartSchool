@@ -10,8 +10,8 @@ echo "🔧 Namespace : $NAMESPACE"
 kubectl create namespace $NAMESPACE 2>/dev/null || echo "⚠️  Namespace existe déjà."
 
 ###############################################################################
-# 1️⃣ - BUILD DES IMAGES DOCKER
-###############################################################################
+1️⃣ - BUILD DES IMAGES DOCKER
+##############################################################################
 build_images() {
     if ! command -v docker >/dev/null 2>&1; then
         echo "⚠️  docker non détecté — skip build"
@@ -100,7 +100,8 @@ wait_for_service_ready() {
 echo "=============================================================="
 echo " 📦 DEPLOYMENT KUBERNETES"
 echo "=============================================================="
-
+echo "delete all pods service deployment"
+kubectl delete all --all -n $NAMESPACE
 # PostgreSQL
 echo "🐘 PostgreSQL..."
 kubectl apply -f k8s/postgres/pvc.yml -n $NAMESPACE
@@ -175,13 +176,33 @@ DEPLOYMENTS=(
     "frontend-service-deployment"
 )
 
-for deploy in "${DEPLOYMENTS[@]}"; do
-    echo "🔄 Restart : $deploy"
-    kubectl rollout restart deployment/$deploy -n $NAMESPACE 2>/dev/null && \
-    kubectl rollout status deployment/$deploy -n $NAMESPACE --timeout=120s || \
-    echo "⚠️  Problème avec $deploy"
-done
+# for deploy in "${DEPLOYMENTS[@]}"; do
+#     echo "🔄 Restart : $deploy"
+#     kubectl rollout restart deployment/$deploy -n $NAMESPACE 2>/dev/null && \
+#     kubectl rollout status deployment/$deploy -n $NAMESPACE --timeout=120s || \
+#     echo "⚠️  Problème avec $deploy"
+# done
 
 echo "=============================================================="
-echo " 🎉 DEPLOIEMENT TERMINÉ ! TOUS LES SERVICES SONT PRÊTS."
+echo " ********** DEPLOIEMENT TERMINÉ ! TOUS LES SERVICES SONT PRÊTS.********"
 echo "=============================================================="
+
+
+
+echo "=============================================================="
+echo "  ***********LANCEMENT DES SERVICE EN LOCAL*****************"
+echo "=============================================================="
+
+echo "🧹 Suppression des anciens port-forward..."
+pkill -f "kubectl port-forward"
+
+echo "🔌 Port-forward des services..."
+
+kubectl port-forward -n $NAMESPACE service/registry-service 8761:8761 &
+echo "Registry Service -> http://localhost:8761"
+
+kubectl port-forward -n $NAMESPACE service/proxy-service 8081:8081 &
+echo "Proxy Service -> http://localhost:8081"
+
+kubectl port-forward -n $NAMESPACE service/frontend-service 8082:8082 &
+echo "Frontend Service -> http://localhost:8082"
