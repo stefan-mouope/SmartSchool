@@ -2,190 +2,194 @@
 
 NAMESPACE="smartschool"
 
-# echo "=============================================================="
-# echo " 🚀 DEPLOY SMARTSCHOOL — BUILD + DEPLOY KUBERNETES"
-# echo "=============================================================="
+echo "=============================================================="
+echo " 🚀 DEPLOY SMARTSCHOOL — BUILD + DEPLOY KUBERNETES"
+echo "=============================================================="
 
-# echo "🔧 Namespace : $NAMESPACE"
-# kubectl create namespace $NAMESPACE 2>/dev/null || echo "⚠️  Namespace existe déjà."
+echo "🔧 Namespace : $NAMESPACE"
+kubectl create namespace $NAMESPACE 2>/dev/null || echo "⚠️  Namespace existe déjà."
 
-# ###############################################################################
-# 1️⃣ - BUILD DES IMAGES DOCKER
-# ##############################################################################
-# build_images() {
-#     if ! command -v docker >/dev/null 2>&1; then
-#         echo "⚠️  docker non détecté — skip build"
-#         return 0
-#     fi
+###############################################################################
+1️⃣ - BUILD DES IMAGES DOCKER
+##############################################################################
+build_images() {
+    if ! command -v docker >/dev/null 2>&1; then
+        echo "⚠️  docker non détecté — skip build"
+        return 0
+    fi
 
-#     DOCKER_REGISTRY="${DOCKER_REGISTRY:-}"
-#     KIND_CLUSTER="${KIND_CLUSTER:-false}"
-#     MINIKUBE="${MINIKUBE:-false}"
-#     DOCKER_PUSH="${DOCKER_PUSH:-false}"
+    DOCKER_REGISTRY="${DOCKER_REGISTRY:-}"
+    KIND_CLUSTER="${KIND_CLUSTER:-false}"
+    MINIKUBE="${MINIKUBE:-false}"
+    DOCKER_PUSH="${DOCKER_PUSH:-false}"
 
-#     IMAGES=(
-#         "config-service:./smartSchool-config/config-service"
-#         "registry-service:./smartSchool-config/registry-service"
-#         "proxy-service:./smartSchool-config/proxy-service"
-#         "registration-service:./SmartSchool-backend/registration-service"
-#         "inscription-service:./SmartSchool-backend/inscription-service"
-#         "service-notes:./SmartSchool-backend/service-notes"
-#         "authentification-service:./SmartSchool-backend/systeme_authentification"
-#         "frontend-service:./SmartSchool-front"
-#     )
+    images = (
+        "config-service"
+    )
 
-#     echo "=============================================================="
-#     echo " 🔨 BUILD DES IMAGES DOCKER"
-#     echo "=============================================================="
+    IMAGES=(
+        "config-service:./smartSchool-config/config-service"
+        "registry-service:./smartSchool-config/registry-service"
+        "proxy-service:./smartSchool-config/proxy-service"
+        "registration-service:./SmartSchool-backend/registration-service"
+        "inscription-service:./SmartSchool-backend/inscription-service"
+        "service-notes:./SmartSchool-backend/service-notes"
+        "authentification-service:./SmartSchool-backend/systeme_authentification"
+        "frontend-service:./SmartSchool-front"
+    )
 
-#     for entry in "${IMAGES[@]}"; do
-#         name="${entry%%:*}"
-#         ctx="${entry#*:}"
-#         image="${DOCKER_REGISTRY}${name}:latest"
+    echo "=============================================================="
+    echo " 🔨 BUILD DES IMAGES DOCKER"
+    echo "=============================================================="
 
-#         echo "→ Build : $image  (context: $ctx)"
+    for entry in "${IMAGES[@]}"; do
+        name="${entry%%:*}"
+        ctx="${entry#*:}"
+        image="${DOCKER_REGISTRY}${name}:latest"
 
-#         if [ ! -d "$ctx" ]; then
-#             echo "   ❌ Dossier introuvable : $ctx — SKIP"
-#             continue
-#         fi
+        echo "→ Build : $image  (context: $ctx)"
 
-#         docker build -t "$image" "$ctx" || {
-#             echo "   ❌ Build échoué pour $name"
-#             exit 1
-#         }
+        if [ ! -d "$ctx" ]; then
+            echo "   ❌ Dossier introuvable : $ctx — SKIP"
+            continue
+        fi
 
-#         # Load into kind/minikube
-#         if [ "$KIND_CLUSTER" = "true" ]; then
-#             echo "   ⬆️  Load dans kind"
-#             kind load docker-image "$image"
-#         elif [ "$MINIKUBE" = "true" ]; then
-#             echo "   ⬆️  Load dans minikube"
-#             minikube image load "$image"
-#         fi
+        docker build -t "$image" "$ctx" || {
+            echo "   ❌ Build échoué pour $name"
+            exit 1
+        }
 
-#         # Push optionnel
-#         if [ "$DOCKER_PUSH" = "true" ] && [ -n "$DOCKER_REGISTRY" ]; then
-#             echo "   📤 Push → $DOCKER_REGISTRY"
-#             docker push "$image"
-#         fi
-#     done
+        # Load into kind/minikube
+        if [ "$KIND_CLUSTER" = "true" ]; then
+            echo "   ⬆️  Load dans kind"
+            kind load docker-image "$image"
+        elif [ "$MINIKUBE" = "true" ]; then
+            echo "   ⬆️  Load dans minikube"
+            minikube image load "$image"
+        fi
 
-#     echo "✅ Build images terminé."
-# }
+        # Push optionnel
+        if [ "$DOCKER_PUSH" = "true" ] && [ -n "$DOCKER_REGISTRY" ]; then
+            echo "   📤 Push → $DOCKER_REGISTRY"
+            docker push "$image"
+        fi
+    done
 
-# # Build seulement si pas désactivé
-# if [ "${DISABLE_IMAGE_BUILD:-false}" != "true" ]; then
-#     build_images
-# fi
+    echo "✅ Build images terminé."
+}
 
-# ###############################################################################
-# # 2️⃣ - FUNCTION WAIT READY
-# ###############################################################################
-# wait_for_service_ready() {
-#     local label=$1
-#     local name=$2
+# Build seulement si pas désactivé
+if [ "${DISABLE_IMAGE_BUILD:-false}" != "true" ]; then
+    build_images
+fi
 
-#     echo "⏳ Attente du service : $name"
-#     kubectl wait --for=condition=ready pod -l app=$label -n $NAMESPACE --timeout=180s || {
-#         echo "❌ Timeout d'attente : $name"
-#         kubectl get pods -n $NAMESPACE
-#         exit 1
-#     }
-# }
+###############################################################################
+# 2️⃣ - FUNCTION WAIT READY
+###############################################################################
+wait_for_service_ready() {
+    local label=$1
+    local name=$2
 
-# ###############################################################################
-# # 3️⃣ - DEPLOIEMENT DES COMPOSANTS
-# ###############################################################################
-# echo "=============================================================="
-# echo " 📦 DEPLOYMENT KUBERNETES"
-# echo "=============================================================="
-# echo "delete all pods service deployment"
-# kubectl delete all --all -n $NAMESPACE
-# # PostgreSQL
-# echo "🐘 PostgreSQL..."
-# kubectl apply -f k8s/postgres/pvc.yml -n $NAMESPACE
-# kubectl apply -f k8s/postgres/init-configmap.yml -n $NAMESPACE
-# kubectl apply -f k8s/postgres/deployment.yml -n $NAMESPACE
-# kubectl apply -f k8s/postgres/service.yml -n $NAMESPACE
-# wait_for_service_ready "postgres" "PostgreSQL"
+    echo "⏳ Attente du service : $name"
+    kubectl wait --for=condition=ready pod -l app=$label -n $NAMESPACE --timeout=180s || {
+        echo "❌ Timeout d'attente : $name"
+        kubectl get pods -n $NAMESPACE
+        exit 1
+    }
+}
 
-# # Config Service
-# echo "🟦 Config Service..."
-# kubectl apply -f k8s/config-service/deployment.yml -n $NAMESPACE
-# kubectl apply -f k8s/config-service/service.yml -n $NAMESPACE
-# wait_for_service_ready "config-service" "Config Service"
+###############################################################################
+# 3️⃣ - DEPLOIEMENT DES COMPOSANTS
+###############################################################################
+echo "=============================================================="
+echo " 📦 DEPLOYMENT KUBERNETES"
+echo "=============================================================="
+echo "delete all pods service deployment"
+kubectl delete all --all -n $NAMESPACE
+# PostgreSQL
+echo "🐘 PostgreSQL..."
+kubectl apply -f k8s/postgres/pvc.yml -n $NAMESPACE
+kubectl apply -f k8s/postgres/init-configmap.yml -n $NAMESPACE
+kubectl apply -f k8s/postgres/deployment.yml -n $NAMESPACE
+kubectl apply -f k8s/postgres/service.yml -n $NAMESPACE
+wait_for_service_ready "postgres" "PostgreSQL"
 
-# sleep 5
+# Config Service
+echo "🟦 Config Service..."
+kubectl apply -f k8s/config-service/deployment.yml -n $NAMESPACE
+kubectl apply -f k8s/config-service/service.yml -n $NAMESPACE
+wait_for_service_ready "config-service" "Config Service"
 
-# # Registry Service
-# echo "🟧 Registry Service..."
-# kubectl apply -f k8s/registry-service/deployment.yml -n $NAMESPACE
-# kubectl apply -f k8s/registry-service/service.yml -n $NAMESPACE
-# wait_for_service_ready "registry-service" "Registry Service"
+sleep 5
 
-# sleep 5
+# Registry Service
+echo "🟧 Registry Service..."
+kubectl apply -f k8s/registry-service/deployment.yml -n $NAMESPACE
+kubectl apply -f k8s/registry-service/service.yml -n $NAMESPACE
+wait_for_service_ready "registry-service" "Registry Service"
 
-# # Proxy Service
-# echo "🟥 Proxy Service..."
-# kubectl apply -f k8s/proxy-service/deployment.yml -n $NAMESPACE
-# kubectl apply -f k8s/proxy-service/service.yml -n $NAMESPACE
-# wait_for_service_ready "proxy-service" "Proxy Service"
+sleep 5
 
-# ###############################################################################
-# # RabbitMQ
-# ###############################################################################
-# echo "🐇 RabbitMQ..."
-# kubectl apply -f k8s/rabbitmq-service/deployment.yml -n $NAMESPACE
-# kubectl apply -f k8s/rabbitmq-service/service.yml -n $NAMESPACE
-# wait_for_service_ready "rabbitmq-service" "RabbitMQ"
+# Proxy Service
+echo "🟥 Proxy Service..."
+kubectl apply -f k8s/proxy-service/deployment.yml -n $NAMESPACE
+kubectl apply -f k8s/proxy-service/service.yml -n $NAMESPACE
+wait_for_service_ready "proxy-service" "Proxy Service"
 
-# ###############################################################################
-# # Autres microservices
-# ###############################################################################
-# SERVICES=(
-#     "inscription-service"
-#     "registration-service"
-#     "service-notes"
-#     "authentification-service"
-#     "frontend-service"
-# )
+###############################################################################
+# RabbitMQ
+###############################################################################
+echo "🐇 RabbitMQ..."
+kubectl apply -f k8s/rabbitmq-service/deployment.yml -n $NAMESPACE
+kubectl apply -f k8s/rabbitmq-service/service.yml -n $NAMESPACE
+wait_for_service_ready "rabbitmq-service" "RabbitMQ"
 
-# for svc in "${SERVICES[@]}"; do
-#     echo "🟩 Déploiement : $svc"
-#     kubectl apply -f k8s/$svc/deployment.yml -n $NAMESPACE
-#     kubectl apply -f k8s/$svc/service.yml -n $NAMESPACE
-#     wait_for_service_ready "$svc" "$svc"
-# done
+###############################################################################
+# Autres microservices
+###############################################################################
+SERVICES=(
+    "inscription-service"
+    "registration-service"
+    "service-notes"
+    "authentification-service"
+    "frontend-service"
+)
 
-# ###############################################################################
-# # 4️⃣ - FORCE RESTART POUR CHARGER LES NOUVELLES IMAGES
-# ###############################################################################
-# echo "=============================================================="
-# echo " 🔄 RESTART DES DEPLOYMENTS (nouvelles images)"
-# echo "=============================================================="
+for svc in "${SERVICES[@]}"; do
+    echo "🟩 Déploiement : $svc"
+    kubectl apply -f k8s/$svc/deployment.yml -n $NAMESPACE
+    kubectl apply -f k8s/$svc/service.yml -n $NAMESPACE
+    wait_for_service_ready "$svc" "$svc"
+done
 
-# DEPLOYMENTS=(
-#     "config-service-deployment"
-#     "registry-service-deployment"
-#     "proxy-service-deployment"
-#     "registration-service-deployment"
-#     "inscription-service-deployment"
-#     "service-notes-deployment"
-#     "authentification-service-deployment"
-#     "frontend-service-deployment"
-# )
+###############################################################################
+# 4️⃣ - FORCE RESTART POUR CHARGER LES NOUVELLES IMAGES
+###############################################################################
+echo "=============================================================="
+echo " 🔄 RESTART DES DEPLOYMENTS (nouvelles images)"
+echo "=============================================================="
 
-# for deploy in "${DEPLOYMENTS[@]}"; do
-#     echo "🔄 Restart : $deploy"
-#     kubectl rollout restart deployment/$deploy -n $NAMESPACE 2>/dev/null && \
-#     kubectl rollout status deployment/$deploy -n $NAMESPACE --timeout=120s || \
-#     echo "⚠️  Problème avec $deploy"
-# done
+DEPLOYMENTS=(
+    "config-service-deployment"
+    "registry-service-deployment"
+    "proxy-service-deployment"
+    "registration-service-deployment"
+    "inscription-service-deployment"
+    "service-notes-deployment"
+    "authentification-service-deployment"
+    "frontend-service-deployment"
+)
 
-# echo "=============================================================="
-# echo " ********** DEPLOIEMENT TERMINÉ ! TOUS LES SERVICES SONT PRÊTS.********"
-# echo "=============================================================="
+for deploy in "${DEPLOYMENTS[@]}"; do
+    echo "🔄 Restart : $deploy"
+    kubectl rollout restart deployment/$deploy -n $NAMESPACE 2>/dev/null && \
+    kubectl rollout status deployment/$deploy -n $NAMESPACE --timeout=120s || \
+    echo "⚠️  Problème avec $deploy"
+done
+
+echo "=============================================================="
+echo " ********** DEPLOIEMENT TERMINÉ ! TOUS LES SERVICES SONT PRÊTS.********"
+echo "=============================================================="
 
 
 
