@@ -10,7 +10,7 @@ echo "🔧 Namespace : $NAMESPACE"
 kubectl create namespace $NAMESPACE 2>/dev/null || echo "⚠️  Namespace existe déjà."
 
 ###############################################################################
-1️⃣ - BUILD DES IMAGES DOCKER
+# 1️⃣ - BUILD DES IMAGES DOCKER (MINIKUBE)
 ##############################################################################
 build_images() {
     if ! command -v docker >/dev/null 2>&1; then
@@ -18,14 +18,9 @@ build_images() {
         return 0
     fi
 
-    DOCKER_REGISTRY="${DOCKER_REGISTRY:-}"
-    KIND_CLUSTER="${KIND_CLUSTER:-false}"
-    MINIKUBE="${MINIKUBE:-false}"
-    DOCKER_PUSH="${DOCKER_PUSH:-false}"
-
-    images = (
-        "config-service"
-    )
+    echo "=============================================================="
+    echo " 🔨 BUILD DES IMAGES DOCKER (nom-service:latest)"
+    echo "=============================================================="
 
     IMAGES=(
         "config-service:./smartSchool-config/config-service"
@@ -38,14 +33,12 @@ build_images() {
         "frontend-service:./SmartSchool-front"
     )
 
-    echo "=============================================================="
-    echo " 🔨 BUILD DES IMAGES DOCKER"
-    echo "=============================================================="
+    USE_MINIKUBE=true
 
     for entry in "${IMAGES[@]}"; do
         name="${entry%%:*}"
         ctx="${entry#*:}"
-        image="${DOCKER_REGISTRY}${name}:latest"
+        image="${name}:latest"
 
         echo "→ Build : $image  (context: $ctx)"
 
@@ -59,23 +52,16 @@ build_images() {
             exit 1
         }
 
-        # Load into kind/minikube
-        if [ "$KIND_CLUSTER" = "true" ]; then
-            echo "   ⬆️  Load dans kind"
-            kind load docker-image "$image"
-        elif [ "$MINIKUBE" = "true" ]; then
-            echo "   ⬆️  Load dans minikube"
-            minikube image load "$image"
-        fi
+        if [ "$USE_MINIKUBE" = true ]; then
+            echo "   🧹 Nettoyage ancienne image dans Minikube..."
+            minikube ssh "docker rmi $image 2>/dev/null || true"
 
-        # Push optionnel
-        if [ "$DOCKER_PUSH" = "true" ] && [ -n "$DOCKER_REGISTRY" ]; then
-            echo "   📤 Push → $DOCKER_REGISTRY"
-            docker push "$image"
+            echo "   ⬆️  Load dans Minikube : $image"
+            minikube image load "$image"
         fi
     done
 
-    echo "✅ Build images terminé."
+    echo "✅ Build + load dans Minikube terminé."
 }
 
 # Build seulement si pas désactivé
@@ -104,8 +90,10 @@ wait_for_service_ready() {
 echo "=============================================================="
 echo " 📦 DEPLOYMENT KUBERNETES"
 echo "=============================================================="
-echo "delete all pods service deployment"
-kubectl delete all --all -n $NAMESPACE
+
+echo "🗑 Suppression de tous les pods/services existants..."
+kubectl delete all --all -n $NAMESPACE 2>/dev/null || true
+
 # PostgreSQL
 echo "🐘 PostgreSQL..."
 kubectl apply -f k8s/postgres/pvc.yml -n $NAMESPACE
@@ -114,40 +102,12 @@ kubectl apply -f k8s/postgres/deployment.yml -n $NAMESPACE
 kubectl apply -f k8s/postgres/service.yml -n $NAMESPACE
 wait_for_service_ready "postgres" "PostgreSQL"
 
-# Config Service
-echo "🟦 Config Service..."
-kubectl apply -f k8s/config-service/deployment.yml -n $NAMESPACE
-kubectl apply -f k8s/config-service/service.yml -n $NAMESPACE
-wait_for_service_ready "config-service" "Config Service"
-
-sleep 5
-
-# Registry Service
-echo "🟧 Registry Service..."
-kubectl apply -f k8s/registry-service/deployment.yml -n $NAMESPACE
-kubectl apply -f k8s/registry-service/service.yml -n $NAMESPACE
-wait_for_service_ready "registry-service" "Registry Service"
-
-sleep 5
-
-# Proxy Service
-echo "🟥 Proxy Service..."
-kubectl apply -f k8s/proxy-service/deployment.yml -n $NAMESPACE
-kubectl apply -f k8s/proxy-service/service.yml -n $NAMESPACE
-wait_for_service_ready "proxy-service" "Proxy Service"
-
-###############################################################################
-# RabbitMQ
-###############################################################################
-echo "🐇 RabbitMQ..."
-kubectl apply -f k8s/rabbitmq-service/deployment.yml -n $NAMESPACE
-kubectl apply -f k8s/rabbitmq-service/service.yml -n $NAMESPACE
-wait_for_service_ready "rabbitmq-service" "RabbitMQ"
-
-###############################################################################
-# Autres microservices
-###############################################################################
+# Services principaux
 SERVICES=(
+    "config-service"
+    "registry-service"
+    "proxy-service"
+    "rabbitmq-service"
     "inscription-service"
     "registration-service"
     "service-notes"
@@ -169,18 +129,8 @@ echo "=============================================================="
 echo " 🔄 RESTART DES DEPLOYMENTS (nouvelles images)"
 echo "=============================================================="
 
-DEPLOYMENTS=(
-    "config-service-deployment"
-    "registry-service-deployment"
-    "proxy-service-deployment"
-    "registration-service-deployment"
-    "inscription-service-deployment"
-    "service-notes-deployment"
-    "authentification-service-deployment"
-    "frontend-service-deployment"
-)
-
-for deploy in "${DEPLOYMENTS[@]}"; do
+for svc in "${SERVICES[@]}"; do
+    deploy="${svc}-deployment"
     echo "🔄 Restart : $deploy"
     kubectl rollout restart deployment/$deploy -n $NAMESPACE 2>/dev/null && \
     kubectl rollout status deployment/$deploy -n $NAMESPACE --timeout=120s || \
@@ -191,17 +141,17 @@ echo "=============================================================="
 echo " ********** DEPLOIEMENT TERMINÉ ! TOUS LES SERVICES SONT PRÊTS.********"
 echo "=============================================================="
 
-
-
+###############################################################################
+# 5️⃣ - PORT-FORWARD
+###############################################################################
 echo "=============================================================="
 echo "  ***********LANCEMENT DES SERVICE EN LOCAL*****************"
 echo "=============================================================="
 
 echo "🧹 Suppression des anciens port-forward..."
-pkill -f "kubectl port-forward"
+pkill -f "kubectl port-forward" 2>/dev/null || true
 
 echo "🔌 Port-forward des services..."
-
 kubectl port-forward -n $NAMESPACE service/registry-service 8761:8761 &
 echo "Registry Service -> http://localhost:8761"
 

@@ -8,7 +8,7 @@ import atexit
 # Configuration du service
 # -------------------------
 APP_NAME = "service-note"  # Adapter selon le service
-INSTANCE_PORT = 8001
+INSTANCE_PORT = 8002
 EUREKA_HOST = os.getenv("EUREKA_HOST", "registry-service")
 EUREKA_PORT = os.getenv("EUREKA_PORT", "8761")
 
