@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
         - name: service-notes-container
-          image: service-notes:latest
-          imagePullPolicy: Never
+          image: sandjonyves/service-notes:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8002
           env:

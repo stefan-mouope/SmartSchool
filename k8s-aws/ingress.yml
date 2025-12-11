@@ -1,0 +1,49 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: smartschool-ingress
+  namespace: smartschool
+  annotations:
+    # Utiliser Application Load Balancer
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+
+    # HTTP / HTTPS (activer HTTPS si cert ACM dispo)
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+
+    # Health checks (laisser générique si multiples services derrière)
+    alb.ingress.kubernetes.io/healthcheck-path: /
+    alb.ingress.kubernetes.io/healthcheck-port: traffic
+
+spec:
+  rules:
+    - http:
+        paths:
+
+          # API Gateway (toutes les API passent par là)
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: proxy-service
+                port:
+                  number: 8081
+
+          # Eureka Dashboard
+          - path: /eureka
+            pathType: Prefix
+            backend:
+              service:
+                name: registry-service
+                port:
+                  number: 8761
+
+          # Frontend (EN DERNIER !)
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-service
+                port:
+                  number: 8082

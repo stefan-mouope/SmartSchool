@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
       - name: registry-service-container
-        image: sandjonyves/registry-service:latest
-        imagePullPolicy: Always
+        image: registry-service:latest
+        imagePullPolicy: Never
         ports:
         - containerPort: 8761
         env:

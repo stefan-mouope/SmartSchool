@@ -1,0 +1,48 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: smartschool-cluster
+  region: eu-west-1  # Choisissez votre région
+  version: "1.29"
+
+# Configuration des nodes
+nodeGroups:
+  - name: smartschool-nodes
+    instanceType: t3.medium  # 2 vCPU, 4 GB RAM
+    desiredCapacity: 3       # Nombre de nodes
+    minSize: 2
+    maxSize: 4
+    volumeSize: 30           # GB
+    
+    # SSH access (optionnel, pour déboguer)
+    ssh:
+      allow: true
+      publicKeyName: smartschool-key  # Créez une key pair dans EC2 console
+    
+    # Labels pour organiser les pods
+    labels:
+      role: worker
+      environment: production
+    
+    # Tags AWS
+    tags:
+      Project: SmartSchool
+      Environment: Production
+
+# Configuration VPC (optionnel, eksctl crée automatiquement)
+vpc:
+  cidr: 10.0.0.0/16
+  nat:
+    gateway: Single  # Économie de coûts
+
+# Activation des add-ons
+addons:
+  - name: vpc-cni
+  - name: coredns
+  - name: kube-proxy
+
+# CloudWatch logging
+cloudWatch:
+  clusterLogging:
+    enableTypes: ["api", "audit", "authenticator", "controllerManager", "scheduler"]

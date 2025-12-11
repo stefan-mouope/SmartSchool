@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
         - name: registration-service-container
-          image: sandjonyves/registration-service:latest
-          imagePullPolicy: Always
+          image: registration-service:latest
+          imagePullPolicy: Never
           ports:
             - containerPort: 3000
           env:

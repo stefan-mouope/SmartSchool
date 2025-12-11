@@ -5,3 +5,16 @@ WORKDIR /app
 COPY target/config-service.jar config-service.jar
 
 ENTRYPOINT [ "java", "-jar", "config-service.jar" ]
+
+
+# Build stage
+# FROM eclipse-temurin:21-jdk AS builder
+# WORKDIR /app
+# COPY . .
+# RUN ./mvnw clean package -DskipTests
+
+# # Runtime stage (très léger)
+# FROM eclipse-temurin:21-jre
+# WORKDIR /app
+# COPY --from=builder /app/target/config-service-*.jar app.jar
+# ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq-service-deployment
+  namespace: smartschool
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq-service
+  template:
+    metadata:
+      labels:
+        app: rabbitmq-service
+    spec:
+      containers:
+      - name: rabbitmq-container
+        image: 010912112706.dkr.ecr.eu-west-1.amazonaws.com/smartschool/rabbitmq:latest
+        ports:
+        - containerPort: 5672
+        - containerPort: 15672

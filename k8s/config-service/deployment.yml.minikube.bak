@@ -16,7 +16,7 @@
 #       containers:
 #         - name: config-service-container
 #           image: config-service
-#           imagePullPolicy: Always
+#           imagePullPolicy: Never
 #           ports:
 #             - containerPort: 8080
 #           env:
@@ -53,8 +53,8 @@ spec:
     spec:
       containers:
         - name: config-service-container
-          image: sandjonyves/config-service:latest
-          imagePullPolicy: Always
+          image: config-service:latest
+          imagePullPolicy: Never
           ports:
             - containerPort: 8080
           env:

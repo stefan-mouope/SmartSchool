@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
       - name: proxy-service-container
-        image: sandjonyves/proxy-service:latest
-        imagePullPolicy: Always
+        image: proxy-service:latest
+        imagePullPolicy: Never
         ports:
         - containerPort: 8081
         env:

@@ -3,20 +3,7 @@
 # ===================================
 # Configuration Docker Hub
 # ===================================
-DOCKER_USERNAME="${DOCKER_USERNAME:-votre-username}"  # ⬅️ CHANGEZ ICI ou exportez la variable
-
-if [ "$DOCKER_USERNAME" = "votre-username" ]; then
-    echo "⚠️  ATTENTION : Vous devez définir votre username Docker Hub !"
-    echo ""
-    echo "Méthode 1 : Modifier le script"
-    echo "  DOCKER_USERNAME=\"votre-vrai-username\""
-    echo ""
-    echo "Méthode 2 : Variable d'environnement"
-    echo "  export DOCKER_USERNAME=\"votre-vrai-username\""
-    echo "  ./use-dockerhub.sh"
-    echo ""
-    exit 1
-fi
+DOCKER_USERNAME="sandjonyves"  # ✅ Votre vrai username Docker Hub
 
 echo "=============================================================="
 echo " 🐳 CONFIGURATION POUR DOCKER HUB"
@@ -37,7 +24,6 @@ echo ""
 
 # Modifier tous les deployments pour Docker Hub
 echo "🔄 Modification des deployments pour Docker Hub..."
-
 find k8s -name "deployment.yml" -type f -exec sed -i \
     -e "s|image: \([^/]*\):latest|image: $DOCKER_USERNAME/\1:latest|g" \
     -e "s|image: \([^/]*\):v[0-9.]*|image: $DOCKER_USERNAME/\1:latest|g" \

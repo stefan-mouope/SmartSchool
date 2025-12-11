@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
         - name: authentification-service-container
-          image: authentification-service:latest
-          imagePullPolicy: Never
+          image: sandjonyves/authentification-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8001
           env:

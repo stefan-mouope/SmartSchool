@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
         - name: inscription-service-container
-          image: inscription-service:latest
-          imagePullPolicy: Never
+          image: sandjonyves/inscription-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 5000
           env:
