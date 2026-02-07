@@ -112,7 +112,6 @@ services:
       - RABBITMQ_HOST=rabbitmq-service:5672
     networks:
       - smartschool-network
-
     depends_on:
       registry-service:
         condition: service_healthy
@@ -124,6 +123,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+
 
   service-notes:
     build: ./SmartSchool-backend/service-notes

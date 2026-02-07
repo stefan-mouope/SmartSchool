@@ -38,10 +38,15 @@ export class AcademicYearController {
   // Récupérer l'année académique actuelle
 async findCurrent(req: Request, res: Response) {
   try {
-    const schoolId = Number(req.params.schoolId);
+    // Utilise explicitement le casting 'as string' 
+    // ou force la conversion pour garantir qu'on n'a pas un string[]
+    const schoolIdRaw = req.params.schoolId as string;
+    const schoolId = Number(schoolIdRaw);
+
     console.log('Received schoolId:', schoolId);
-    if (!schoolId) {
-      return res.status(400).json({ error: "schoolId est requis" });
+
+    if (isNaN(schoolId)) { // Plus précis que !schoolId car 0 est falsy
+      return res.status(400).json({ error: "schoolId valide est requis" });
     }
 
     const academicYear = await academicYearService.findCurrent(schoolId);
