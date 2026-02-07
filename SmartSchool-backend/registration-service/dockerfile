@@ -2,21 +2,15 @@ FROM node:20-slim
 
 WORKDIR /app
 
-# Installer les outils nécessaires pour compiler sqlite3
 RUN apt-get update && apt-get install -y python3 make g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Copier package.json et package-lock.json
 COPY package*.json ./
 
-# Installer les dépendances (node_modules Linux)
 RUN npm install
 
-# Copier le reste du code
 COPY . .
 
-# Exposer le port
 EXPOSE 3000
 
-# Commande pour dev (hot reload)
 CMD ["npm", "run", "dev"]
